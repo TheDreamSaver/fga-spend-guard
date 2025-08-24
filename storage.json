@@ -1,0 +1,54 @@
+{
+  "expenses": [
+    {
+      "id": "exp_101",
+      "description": "Laptop accessories",
+      "amount": 150,
+      "date": "2024-01-15",
+      "status": "Pending",
+      "submittedBy": "dina_dev",
+      "department": "Engineering",
+      "category": "Equipment"
+    },
+    {
+      "id": "exp_102",
+      "description": "Conference registration",
+      "amount": 300,
+      "date": "2024-01-20",
+      "status": "Denied",
+      "submittedBy": "dina_dev",
+      "department": "Engineering",
+      "category": "Training"
+    },
+    {
+      "id": "exp_201",
+      "description": "Team lunch",
+      "amount": 200,
+      "date": "2024-01-25",
+      "status": "Pending",
+      "submittedBy": "raj_manager",
+      "department": "Engineering",
+      "category": "Meals"
+    },
+    {
+      "id": "exp_301",
+      "description": "Software licenses",
+      "amount": 1200,
+      "date": "2024-02-01",
+      "status": "Pending",
+      "submittedBy": "chen_vp",
+      "department": "Engineering",
+      "category": "Software"
+    },
+    {
+      "id": "exp_401",
+      "description": "Financial audit tools",
+      "amount": 500,
+      "date": "2024-02-05",
+      "status": "Pending",
+      "submittedBy": "frank_finance",
+      "department": "Finance",
+      "category": "Tools"
+    }
+  ]
+}

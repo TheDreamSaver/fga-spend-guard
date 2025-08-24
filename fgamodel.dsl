@@ -1,0 +1,19 @@
+model
+  schema 1.1
+
+type user
+  relations
+    define can_manage: manager or can_manage from manager
+    define manager: [user]
+
+type department
+  relations
+    define finance_auditor: [user]
+    define member: [user]
+
+type expense
+  relations
+    define can_approve: can_manage from owner
+    define can_view: owner or can_manage from owner or finance_auditor from department
+    define department: [department]
+    define owner: [user]
