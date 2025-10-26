@@ -10,13 +10,14 @@ export interface AIResponse {
 
 export class AIService {
   private static instance: AIService;
-  private openaiApiKey: string = 'REDACTED_OPENAI_API_KEY';
+  private openaiApiKey: string = import.meta.env.VITE_OPENAI_API_KEY || '';
   private openaiModel: string = 'gpt-3.5-turbo';
   private isOpenAIAvailable: boolean = true;
 
   private constructor() {
-    // Initialize with OpenAI settings
-    this.openaiApiKey = 'REDACTED_OPENAI_API_KEY';
+    // Initialize with OpenAI settings from environment variable
+    // Falls back to empty string if not set (will use mock responses)
+    this.openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
     this.openaiModel = 'gpt-3.5-turbo';
     this.checkOpenAIAvailability();
   }

@@ -56,6 +56,7 @@
 
 5. Click **"Environment Variables"** and add:
    - `VITE_API_URL` = `https://smart-spend-backend.onrender.com` (your Render URL)
+   - `VITE_OPENAI_API_KEY` = (optional - add your OpenAI API key if you want AI to work, or leave empty to use mock responses)
 
 6. Click **"Deploy"**
 7. Wait 3 minutes
