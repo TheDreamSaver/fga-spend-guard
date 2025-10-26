@@ -5,22 +5,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus } from 'lucide-react';
+import { Plus, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { USERS } from '@/lib/fga';
 import ExpenseReports from '@/components/ExpenseReports';
 import AIAssistant from '@/components/AIAssistant';
 import AddExpenseModal from '@/components/AddExpenseModal';
 
-const Index = () => {
+const DemoApp = () => {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState('dina_dev');
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const expenseReportsRef = useRef<{ refresh: () => void } | null>(null);
 
   const handleExpenseAdded = () => {
-    console.log('✅ Expense added successfully - reloading page to show updated data');
-    // Simple and reliable: just reload the page
+    console.log('✅ Expense added successfully - refreshing expense data');
+    // Refresh only the expense reports instead of full page reload
     setTimeout(() => {
-      window.location.reload();
+      if (expenseReportsRef.current) {
+        expenseReportsRef.current.refresh();
+      }
     }, 500);
   };
 
@@ -29,9 +33,22 @@ const Index = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Landing
+            </Button>
+            <Badge variant="secondary" className="text-sm">
+              Demo Mode
+            </Badge>
+          </div>
           <h1 className="text-4xl font-bold text-gray-900">SmartSpend</h1>
           <p className="text-lg text-gray-600">Intelligent Expense Management with Fine-Grained Authorization</p>
-            </div>
+        </div>
             
             {/* Persona Selector */}
         <Card>
@@ -105,6 +122,7 @@ const Index = () => {
               ref={expenseReportsRef}
               currentUser={currentUser} 
               persona={USERS[currentUser]}
+              isAuthenticated={false}
             />
           </div>
 
@@ -113,12 +131,13 @@ const Index = () => {
             <AIAssistant 
               currentUser={currentUser} 
               persona={USERS[currentUser]} 
+              isAuthenticated={false}
               onExpenseAction={() => {
-                // Reload page when AI performs an action
-                console.log('🤖 AI action detected, reloading page');
-                setTimeout(() => {
-                  window.location.reload();
-                }, 500);
+                // Refresh only the expense reports instead of full page reload
+                console.log('🤖 AI action detected, refreshing expense data');
+                if (expenseReportsRef.current) {
+                  expenseReportsRef.current.refresh();
+                }
               }}
             />
           </div>
@@ -129,10 +148,11 @@ const Index = () => {
           isOpen={showAddExpenseModal}
           onClose={() => setShowAddExpenseModal(false)}
           onExpenseAdded={handleExpenseAdded}
+          isAuthenticated={false}
         />
       </div>
     </div>
   );
 };
 
-export default Index;
+export default DemoApp;

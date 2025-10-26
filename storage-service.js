@@ -43,7 +43,19 @@ class FileStorageService {
   // Add a new expense
   addExpense(expense) {
     const expenses = this.readExpenses();
-    expenses.push(expense);
+    
+    // Check if expense with same ID already exists
+    const existingExpense = expenses.find(e => e.id === expense.id);
+    if (existingExpense) {
+      console.log(`⚠️ Expense with ID ${expense.id} already exists, updating instead of creating duplicate`);
+      // Update the existing expense instead of creating a duplicate
+      const index = expenses.findIndex(e => e.id === expense.id);
+      expenses[index] = expense;
+    } else {
+      // Add new expense
+      expenses.push(expense);
+    }
+    
     return this.writeExpenses(expenses);
   }
 

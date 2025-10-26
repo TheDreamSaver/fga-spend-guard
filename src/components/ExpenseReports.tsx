@@ -7,11 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CheckCircle, XCircle, Clock, Eye, EyeOff, AlertTriangle, Database, Receipt, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import { toast } from "sonner";
 import { dataService } from '@/lib/data';
+import { authDataService } from '@/lib/auth-data';
 import { USERS, Expense } from '@/lib/fga';
 
 interface ExpenseReportsProps {
   currentUser: string;
-  persona: any;
+  persona?: any;
+  isAuthenticated?: boolean;
 }
 
 interface ExpensePermission {
@@ -36,7 +38,12 @@ export interface ExpenseReportsRef {
 }
 
 const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
-  ({ currentUser, persona }, ref) => {
+  ({ currentUser, persona, isAuthenticated = false }, ref) => {
+    
+    // Helper function to shorten email by removing @company.com
+    const shortenEmail = (email: string): string => {
+      return email.replace('@company.com', '');
+    };
     
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [permissions, setPermissions] = useState<Record<string, ExpensePermission>>({});
@@ -48,11 +55,15 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
     const loadExpenses = useCallback(async () => {
       setLoadingExpenses(true);
       try {
-        const visibleExpenses = await dataService.getVisibleExpenses(currentUser);
+        const visibleExpenses = isAuthenticated 
+          ? await authDataService.getVisibleExpenses(currentUser)
+          : await dataService.getVisibleExpenses(currentUser);
         setExpenses(visibleExpenses);
 
         // Get authorization system status
-        const authStatus = await dataService.getAuthorizationStatus();
+        const authStatus = isAuthenticated 
+          ? await authDataService.getAuthorizationStatus()
+          : await dataService.getAuthorizationStatus();
         setAuthSystem(authStatus === 'Configured' ? 'OpenFGA' : 'Not Available');
 
         // Initialize loading states for permissions
@@ -71,9 +82,15 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
             const expenseIds = visibleExpenses.map(exp => exp.id);
             
             const [approvalResults, denialResults, resetResults] = await Promise.all([
-              dataService.batchCheckApprovalPermissions(currentUser, expenseIds),
-              dataService.batchCheckDenialPermissions(currentUser, expenseIds),
-              dataService.batchCheckResetPermissions(currentUser, expenseIds)
+              isAuthenticated 
+                ? authDataService.batchCheckApprovalPermissions(currentUser, expenseIds)
+                : dataService.batchCheckApprovalPermissions(currentUser, expenseIds),
+              isAuthenticated 
+                ? authDataService.batchCheckDenialPermissions(currentUser, expenseIds)
+                : dataService.batchCheckDenialPermissions(currentUser, expenseIds),
+              isAuthenticated 
+                ? authDataService.batchCheckResetPermissions(currentUser, expenseIds)
+                : dataService.batchCheckResetPermissions(currentUser, expenseIds)
             ]);
             
             // Combine results into permissions map
@@ -116,7 +133,7 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
       } finally {
         setLoadingExpenses(false);
       }
-    }, [currentUser]);
+    }, [currentUser, isAuthenticated]);
 
     // Expose refresh method to parent component
     useImperativeHandle(ref, () => ({
@@ -198,7 +215,9 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
 
     const handleApprove = async (expenseId: string) => {
       try {
-        const success = await dataService.approveExpense(expenseId, currentUser);
+        const success = isAuthenticated 
+          ? await authDataService.approveExpense(expenseId, currentUser)
+          : await dataService.approveExpense(expenseId, currentUser);
         if (success) {
           // Update only the specific expense
           setExpenses(prevExpenses => 
@@ -220,7 +239,9 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
 
     const handleDeny = async (expenseId: string) => {
       try {
-        const success = await dataService.denyExpense(expenseId, currentUser);
+        const success = isAuthenticated 
+          ? await authDataService.denyExpense(expenseId, currentUser)
+          : await dataService.denyExpense(expenseId, currentUser);
         if (success) {
           // Update only the specific expense
           setExpenses(prevExpenses => 
@@ -246,8 +267,10 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
       }
 
       try {
-        const result = await dataService.deleteExpense(expenseId, currentUser);
-        if (result.success) {
+        const result = isAuthenticated 
+          ? await authDataService.deleteExpense(expenseId)
+          : await dataService.deleteExpense(expenseId, currentUser);
+        if (result.success || result === true) {
           // Remove the expense from the local state
           setExpenses(prevExpenses => 
             prevExpenses.filter(expense => expense.id !== expenseId)
@@ -259,10 +282,10 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
             return newPermissions;
           });
           toast.success("Expense deleted successfully!");
-          // Reload page after short delay to ensure UI is consistent
+          // Refresh expense data after deletion
           setTimeout(() => {
-            window.location.reload();
-          }, 1000);
+            loadExpenses();
+          }, 500);
         } else {
           toast.error(result.message || "Failed to delete expense");
         }
@@ -274,7 +297,9 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
 
     const handleReset = async (expenseId: string) => {
       try {
-        const success = await dataService.resetExpenseStatus(expenseId, currentUser);
+        const success = isAuthenticated 
+          ? await authDataService.resetExpense(expenseId, currentUser)
+          : await dataService.resetExpenseStatus(expenseId, currentUser);
         if (success) {
           // Update only the specific expense
           setExpenses(prevExpenses => 
@@ -391,9 +416,9 @@ const getStatusIcon = (status: string) => {
                       {getSortIcon('submittedBy')}
                     </div>
                   </TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead className="w-48">Description</TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-gray-50 select-none"
+                    className="cursor-pointer hover:bg-gray-50 select-none w-24"
                     onClick={() => handleSort('amount')}
                   >
                     <div className="flex items-center gap-1">
@@ -402,7 +427,7 @@ const getStatusIcon = (status: string) => {
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-gray-50 select-none"
+                    className="cursor-pointer hover:bg-gray-50 select-none w-24"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center gap-1">
@@ -410,7 +435,7 @@ const getStatusIcon = (status: string) => {
                       {getSortIcon('status')}
                     </div>
                   </TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="min-w-[200px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -423,13 +448,13 @@ const getStatusIcon = (status: string) => {
                   return (
                     <TableRow key={expense.id}>
                       <TableCell className="font-mono text-sm">{expense.id}</TableCell>
-                      <TableCell>
+                      <TableCell className="max-w-[120px]">
                         <div className="flex flex-col">
-                            <span className="font-medium">{expense.submittedBy}</span>
-                          <span className="text-xs text-gray-500">{expense.department}</span>
+                            <span className="font-medium break-words">{shortenEmail(expense.submittedBy)}</span>
+                          <span className="text-xs text-gray-500 break-words">{expense.department}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{expense.description}</TableCell>
+                      <TableCell className="max-w-[180px] break-words">{expense.description}</TableCell>
                       <TableCell className="font-semibold">
                         ${expense.amount.toLocaleString()}
                       </TableCell>
@@ -445,7 +470,7 @@ const getStatusIcon = (status: string) => {
                         </div>
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell className="min-w-[200px]">
                         <div className="space-y-2">
                           {isLoadingPermissions ? (
                             <div className="flex items-center gap-2">
@@ -455,12 +480,12 @@ const getStatusIcon = (status: string) => {
                           ) : (
                             <>
                               {expense.status === 'Pending' && (
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2">
                                   {permission?.canApprove && (
                                     <Button
                                       size="sm"
                                       onClick={() => handleApprove(expense.id)}
-                                      className="bg-green-600 hover:bg-green-700"
+                                      className="bg-green-600 hover:bg-green-700 shrink-0"
                                     >
                                       Approve
                                     </Button>
@@ -470,7 +495,7 @@ const getStatusIcon = (status: string) => {
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleDeny(expense.id)}
-                                      className="border-red-300 text-red-600 hover:bg-red-50"
+                                      className="border-red-300 text-red-600 hover:bg-red-50 shrink-0"
                                     >
                                       Deny
                                     </Button>
@@ -478,37 +503,37 @@ const getStatusIcon = (status: string) => {
                                 </div>
                               )}
                               {(expense.status === 'Approved' || expense.status === 'Denied') && permission?.canReset && (
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2">
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => handleReset(expense.id)}
-                                    className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                                    className="border-blue-300 text-blue-600 hover:bg-blue-50 shrink-0"
                                   >
                                     Reset to Pending
                                   </Button>
                                 </div>
                               )}
                               {permission && !permission.canApprove && !permission.canDeny && permission.approvalMessage && (
-                                <div className="flex items-center gap-1 text-xs text-amber-600">
-                                  <AlertTriangle className="w-3 h-3" />
-                                  {permission.approvalMessage}
+                                <div className="flex items-start gap-1 text-xs text-amber-600">
+                                  <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                                  <span className="break-words">{permission.approvalMessage}</span>
                                 </div>
                               )}
                               {permission && permission.canDeny && !permission.canApprove && permission.approvalMessage && (
-                                <div className="flex items-center gap-1 text-xs text-amber-600">
-                                  <AlertTriangle className="w-3 h-3" />
-                                  {permission.approvalMessage}
+                                <div className="flex items-start gap-1 text-xs text-amber-600">
+                                  <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                                  <span className="break-words">{permission.approvalMessage}</span>
                                 </div>
                               )}
                               {/* Delete button - only available for expense owner */}
-                              {expense.submittedBy === currentUser && (
+                              {shortenEmail(expense.submittedBy) === shortenEmail(currentUser) && (
                                 <div className="mt-2">
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => handleDelete(expense.id)}
-                                    className="border-red-300 text-red-600 hover:bg-red-50"
+                                    className="border-red-300 text-red-600 hover:bg-red-50 shrink-0"
                                   >
                                     <Trash2 className="w-3 h-3 mr-1" />
                                     Delete

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,21 +7,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, X } from 'lucide-react';
 import { toast } from "sonner";
 import { dataService } from '@/lib/data';
+import { authDataService } from '@/lib/auth-data';
 
 interface AddExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onExpenseAdded: () => void;
+  isAuthenticated?: boolean;
+  userEmail?: string;
 }
 
-const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded }: AddExpenseModalProps) => {
+const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, isAuthenticated = false, userEmail = '' }: AddExpenseModalProps) => {
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
     category: '',
-    submittedBy: 'dina_dev'
+    submittedBy: isAuthenticated ? userEmail : 'dina_dev'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update submittedBy when userEmail changes (for authenticated mode)
+  useEffect(() => {
+    if (isAuthenticated && userEmail) {
+      setFormData(prev => ({
+        ...prev,
+        submittedBy: userEmail
+      }));
+    }
+  }, [isAuthenticated, userEmail]);
 
   const categories = [
     'Equipment',
@@ -38,6 +51,32 @@ const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded }: AddExpenseModalPro
     { id: 'dina_dev', name: 'Dina Dev', role: 'Software Engineer' },
     { id: 'raj_manager', name: 'Raj Manager', role: 'Engineering Manager' }
   ];
+
+  const generateNextExpenseId = async (): Promise<string> => {
+    if (!isAuthenticated) return `exp_${Date.now()}`;
+    
+    try {
+      // Get all expenses to find the highest ID
+      const expenses = await authDataService.getExpenses();
+      const expenseIds = expenses.map(exp => exp.id);
+      
+      // Find the highest numeric ID
+      let maxId = 100; // Start from 100 to match exp_101, exp_102, etc.
+      expenseIds.forEach(id => {
+        if (id.startsWith('exp_')) {
+          const numericPart = parseInt(id.replace('exp_', ''));
+          if (!isNaN(numericPart) && numericPart > maxId) {
+            maxId = numericPart;
+          }
+        }
+      });
+      
+      return `exp_${maxId + 1}`;
+    } catch (error) {
+      console.error('Error generating expense ID:', error);
+      return `exp_${Date.now()}`;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,24 +95,37 @@ const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded }: AddExpenseModalPro
     setIsSubmitting(true);
 
     try {
-      const newExpense = await dataService.addNewExpense({
-        description: formData.description,
-        amount,
-        date: new Date().toISOString().split('T')[0],
-        status: 'Pending',
-        submittedBy: formData.submittedBy,
-        department: 'Engineering', // Both Dina and Raj are in Engineering
-        category: formData.category
-      });
+      const expenseId = await generateNextExpenseId();
+      
+      const newExpense = isAuthenticated 
+        ? await authDataService.addExpense({
+            id: expenseId,
+            description: formData.description,
+            amount,
+            date: new Date().toISOString().split('T')[0],
+            status: 'Pending',
+            submittedBy: formData.submittedBy,
+            department: 'Engineering', // Default department for authenticated users
+            category: formData.category
+          })
+        : await dataService.addNewExpense({
+            description: formData.description,
+            amount,
+            date: new Date().toISOString().split('T')[0],
+            status: 'Pending',
+            submittedBy: formData.submittedBy,
+            department: 'Engineering', // Both Dina and Raj are in Engineering
+            category: formData.category
+          });
 
-      toast.success(`Expense ${newExpense.id} added successfully!`);
+      toast.success(`Expense ${isAuthenticated ? 'added' : newExpense.id} successfully!`);
       
       // Reset form
       setFormData({
         description: '',
         amount: '',
         category: '',
-        submittedBy: 'dina_dev'
+        submittedBy: isAuthenticated ? userEmail : 'dina_dev'
       });
       
       onClose();
@@ -91,7 +143,7 @@ const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded }: AddExpenseModalPro
       description: '',
       amount: '',
       category: '',
-      submittedBy: 'dina_dev'
+      submittedBy: isAuthenticated ? userEmail : 'dina_dev'
     });
     onClose();
   };
@@ -157,27 +209,41 @@ const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded }: AddExpenseModalPro
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="submittedBy">Submitted By *</Label>
-              <Select
-                value={formData.submittedBy}
-                onValueChange={(value) => setFormData({ ...formData, submittedBy: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select submitter" />
-                </SelectTrigger>
-                <SelectContent>
-                  {submitters.map((submitter) => (
-                    <SelectItem key={submitter.id} value={submitter.id}>
-                      <div className="flex items-center gap-2">
-                        <span>{submitter.name}</span>
-                        <span className="text-xs text-gray-500">({submitter.role})</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!isAuthenticated && (
+              <div className="space-y-2">
+                <Label htmlFor="submittedBy">Submitted By *</Label>
+                <Select
+                  value={formData.submittedBy}
+                  onValueChange={(value) => setFormData({ ...formData, submittedBy: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select submitter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {submitters.map((submitter) => (
+                      <SelectItem key={submitter.id} value={submitter.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{submitter.name}</span>
+                          <span className="text-xs text-gray-500">({submitter.role})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
+            {isAuthenticated && (
+              <div className="space-y-2">
+                <Label htmlFor="submittedBy">Submitted By</Label>
+                <div className="p-3 bg-gray-50 rounded-md border">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{userEmail}</span>
+                    <span className="text-xs text-gray-500">(Authenticated User)</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-4">

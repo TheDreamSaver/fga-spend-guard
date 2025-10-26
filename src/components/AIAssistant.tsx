@@ -7,6 +7,7 @@ import { Bot, User, Send, Sparkles, AlertTriangle, CheckCircle, XCircle, Setting
 import { toast } from "sonner";
 import { aiService, AIResponse } from '@/lib/ai';
 import { dataService } from '@/lib/data';
+import { authDataService } from '@/lib/auth-data';
 import { USERS } from '@/lib/fga';
 
 type MessageType = 'info' | 'success' | 'warning' | 'error';
@@ -22,11 +23,12 @@ interface Message {
 
 interface AIAssistantProps {
   currentUser: string;
-  persona: any;
+  persona?: any;
+  isAuthenticated?: boolean;
   onExpenseAction?: () => void; // Callback to refresh expense reports
 }
 
-const AIAssistant = ({ currentUser, persona, onExpenseAction }: AIAssistantProps) => {
+const AIAssistant = ({ currentUser, persona, isAuthenticated = false, onExpenseAction }: AIAssistantProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -39,7 +41,9 @@ const AIAssistant = ({ currentUser, persona, onExpenseAction }: AIAssistantProps
     const welcomeMessage: Message = {
       id: '1',
       sender: 'ai',
-      content: `Hello ${persona.name}! I'm your SmartSpend AI Finance Assistant. I can help you with expense reports and approval workflows based on your role as ${persona.role}. What would you like to know?`,
+      content: isAuthenticated 
+        ? `Hello! I'm your SmartSpend AI Finance Assistant. I can help you with expense reports and approval workflows. What would you like to know?`
+        : `Hello ${persona?.name || 'User'}! I'm your SmartSpend AI Finance Assistant. I can help you with expense reports and approval workflows based on your role as ${persona?.role || 'User'}. What would you like to know?`,
       timestamp: new Date(),
       type: 'info'
     };
@@ -48,7 +52,7 @@ const AIAssistant = ({ currentUser, persona, onExpenseAction }: AIAssistantProps
     // Load predefined queries and update auth system
     loadPredefinedQueries();
     updateAuthSystem();
-  }, [persona]);
+  }, [persona, isAuthenticated]);
 
   const loadPredefinedQueries = async () => {
     try {
@@ -60,7 +64,9 @@ const AIAssistant = ({ currentUser, persona, onExpenseAction }: AIAssistantProps
   };
 
   const updateAuthSystem = async () => {
-    const authStatus = await dataService.getAuthorizationStatus();
+    const authStatus = isAuthenticated 
+      ? await authDataService.getAuthorizationStatus()
+      : await dataService.getAuthorizationStatus();
     setAuthSystem(authStatus === 'Configured' ? 'OpenFGA' : 'Not Available');
   };
 
@@ -89,7 +95,7 @@ const AIAssistant = ({ currentUser, persona, onExpenseAction }: AIAssistantProps
     setIsTyping(true);
 
     try {
-      const response = await aiService.generateResponse(messageText, currentUser);
+      const response = await aiService.generateResponse(messageText, currentUser, isAuthenticated);
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),

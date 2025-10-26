@@ -1,16 +1,11 @@
 import { dataService } from './data';
 
-// OpenFGA Configuration for playground.fga.dev
-const OPENFGA_CONFIG = {
-  apiUrl: 'https://api.playground-us1.fga.dev', // OpenFGA Playground URL
-  storeId: '01K3ET2XTM439ZP4B55FXEX854', // Synced with setup script
-  authorizationModelId: '01K3ET34FPYBA428XBF0B91SNN', // Synced with setup script
-};
+// Backend API configuration
+const API_BASE_URL = 'http://localhost:3001';
 
 export class OpenFGAService {
   private static instance: OpenFGAService;
   private isInitialized: boolean = false;
-  private config = { ...OPENFGA_CONFIG };
   private cache = new Map<string, { result: any; timestamp: number }>();
   private cacheTimeout = 30000; // 30 seconds cache timeout
 
@@ -55,24 +50,25 @@ export class OpenFGAService {
   // Initialize OpenFGA connection
   async initialize(): Promise<boolean> {
     try {
-      // Check if OpenFGA playground is accessible
-      const healthResponse = await fetch(`${this.config.apiUrl}/healthz`);
-      if (!healthResponse.ok) {
-        console.warn('OpenFGA playground not accessible');
+      // Check backend auth status
+      const response = await fetch(`${API_BASE_URL}/api/auth/status`);
+      if (!response.ok) {
+        console.warn('Backend auth service not available');
         return false;
       }
 
-      // Verify store exists and we have access
-      await this.verifyStoreAccess();
-
-      // Verify the authorization model exists (don't create it)
-      await this.verifyAuthorizationModel();
-
-      this.isInitialized = true;
-      console.log('✅ OpenFGA playground initialized successfully');
-      return true;
+      const status = await response.json();
+      this.isInitialized = status.initialized;
+      
+      if (this.isInitialized) {
+        console.log('✅ Backend OpenFGA service initialized successfully');
+      } else {
+        console.warn('Backend OpenFGA service not initialized');
+      }
+      
+      return this.isInitialized;
     } catch (error) {
-      console.warn('Failed to initialize OpenFGA playground:', error);
+      console.warn('Failed to initialize backend OpenFGA service:', error);
       return false;
     }
   }
@@ -80,15 +76,13 @@ export class OpenFGAService {
   // Verify store access
   private async verifyStoreAccess(): Promise<void> {
     try {
-      const response = await fetch(`${this.config.apiUrl}/stores/${this.config.storeId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
+      const response = await fetch(`${API_BASE_URL}/api/auth/status`);
       if (!response.ok) {
-        throw new Error(`Store access failed: ${response.status}`);
+        throw new Error(`Store access verification failed: ${response.status}`);
+      }
+      const status = await response.json();
+      if (!status.initialized) {
+        throw new Error('Backend OpenFGA service not initialized');
       }
     } catch (error) {
       console.error('Error verifying store access:', error);
@@ -96,21 +90,17 @@ export class OpenFGAService {
     }
   }
 
-  // Verify authorization model exists
+  // Verify the authorization model exists
   private async verifyAuthorizationModel(): Promise<void> {
     try {
-      const response = await fetch(`${this.config.apiUrl}/stores/${this.config.storeId}/authorization-models/${this.config.authorizationModelId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
+      const response = await fetch(`${API_BASE_URL}/api/auth/status`);
       if (!response.ok) {
-        throw new Error(`Authorization model not found: ${response.status}`);
+        throw new Error(`Authorization model verification failed: ${response.status}`);
       }
-      
-      console.log('✅ Authorization model verified');
+      const status = await response.json();
+      if (!status.initialized) {
+        throw new Error('Backend OpenFGA service not initialized');
+      }
     } catch (error) {
       console.error('Error verifying authorization model:', error);
       throw error;
@@ -133,18 +123,15 @@ export class OpenFGAService {
     }
 
     try {
-      const response = await fetch(`${this.config.apiUrl}/stores/${this.config.storeId}/check`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          authorization_model_id: this.config.authorizationModelId,
-          tuple_key: {
-            user,
-            relation,
-            object
-          }
+          user,
+          relation,
+          object
         })
       });
 
@@ -153,12 +140,11 @@ export class OpenFGAService {
       }
 
       const data = await response.json();
-      const result = data.allowed;
       
       // Cache the result
-      this.setCachedResult(cacheKey, result);
+      this.setCachedResult(cacheKey, data.allowed);
       
-      return result;
+      return data.allowed;
     } catch (error) {
       console.error('Error checking authorization:', error);
       return false;
@@ -181,13 +167,12 @@ export class OpenFGAService {
     }
 
     try {
-      const response = await fetch(`${this.config.apiUrl}/stores/${this.config.storeId}/list-objects`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/list-objects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          authorization_model_id: this.config.authorizationModelId,
           user,
           relation,
           type
@@ -199,12 +184,11 @@ export class OpenFGAService {
       }
 
       const data = await response.json();
-      const result = data.objects || [];
       
       // Cache the result
-      this.setCachedResult(cacheKey, result);
+      this.setCachedResult(cacheKey, data.objects || []);
       
-      return result;
+      return data.objects || [];
     } catch (error) {
       console.error('Error listing objects:', error);
       return [];
@@ -226,19 +210,15 @@ export class OpenFGAService {
 
   async addRelationship(user: string, relation: string, object: string): Promise<void> {
     try {
-      const response = await fetch(`${this.config.apiUrl}/stores/${this.config.storeId}/write`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/add-relationship`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          writes: {
-            tuple_keys: [{
-              user,
-              relation,
-              object
-            }]
-          }
+          user,
+          relation,
+          object
         })
       });
 
@@ -258,24 +238,24 @@ export class OpenFGAService {
     }
 
     try {
-      const response = await fetch(`${this.config.apiUrl}/stores/${this.config.storeId}/write`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/remove-relationship`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          authorization_model_id: this.config.authorizationModelId,
-          deletes: {
-            tuple_keys: [{
-              user,
-              relation,
-              object
-            }]
-          }
+          user,
+          relation,
+          object
         })
       });
 
-      return response.ok;
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      return data.success;
     } catch (error) {
       console.error('Error removing relationship:', error);
       return false;
@@ -291,55 +271,23 @@ export class OpenFGAService {
     try {
       console.log(`🗑️ Removing all FGA tuples for expense: ${expenseId}`);
       
-      // First, read all tuples for this expense
-      const response = await fetch(`${this.config.apiUrl}/stores/${this.config.storeId}/read`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/remove-expense-tuples`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          authorization_model_id: this.config.authorizationModelId,
-          tuple_key: {
-            object: `expense:${expenseId}`
-          }
+          expenseId
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to read tuples: ${response.status}`);
+        throw new Error(`Failed to remove expense tuples: ${response.status}`);
       }
 
       const data = await response.json();
-      
-      if (data.tuples && data.tuples.length > 0) {
-        // Delete all tuples for this expense
-        const deleteResponse = await fetch(`${this.config.apiUrl}/stores/${this.config.storeId}/write`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            authorization_model_id: this.config.authorizationModelId,
-            deletes: {
-              tuple_keys: data.tuples.map((tuple: any) => ({
-                user: tuple.key.user,
-                relation: tuple.key.relation,
-                object: tuple.key.object
-              }))
-            }
-          })
-        });
-
-        if (!deleteResponse.ok) {
-          throw new Error(`Failed to delete tuples: ${deleteResponse.status}`);
-        }
-
-        console.log(`✅ Deleted ${data.tuples.length} FGA tuples for expense ${expenseId}`);
-      } else {
-        console.log(`ℹ️ No FGA tuples found for expense ${expenseId}`);
-      }
-      
-      return true;
+      console.log(`✅ Removed FGA tuples for expense ${expenseId}`);
+      return data.success;
     } catch (error) {
       console.error(`❌ Error removing FGA tuples for expense ${expenseId}:`, error);
       return false;
@@ -349,8 +297,8 @@ export class OpenFGAService {
   getStatus(): { initialized: boolean; apiUrl: string; storeId: string } {
     return {
       initialized: this.isInitialized,
-      apiUrl: this.config.apiUrl,
-      storeId: this.config.storeId
+      apiUrl: API_BASE_URL,
+      storeId: 'backend'
     };
   }
 }

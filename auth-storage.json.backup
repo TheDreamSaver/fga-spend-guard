@@ -1,0 +1,98 @@
+{
+  "expenses": [
+    {
+      "id": "exp_auth_101",
+      "description": "Laptop accessories",
+      "amount": 150,
+      "date": "2024-01-15",
+      "status": "Approved",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Equipment",
+      "approvedBy": "raj.manager@company.com",
+      "approvedDate": "2025-09-10"
+    },
+    {
+      "id": "exp_auth_102",
+      "description": "Conference registration",
+      "amount": 300,
+      "date": "2024-01-20",
+      "status": "Pending",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Training"
+    },
+    {
+      "id": "exp_auth_201",
+      "description": "Team lunch",
+      "amount": 200,
+      "date": "2024-01-25",
+      "status": "Pending",
+      "submittedBy": "raj.manager@company.com",
+      "department": "Engineering",
+      "category": "Meals"
+    },
+    {
+      "id": "exp_auth_301",
+      "description": "Software licenses",
+      "amount": 1200,
+      "date": "2024-02-01",
+      "status": "Pending",
+      "submittedBy": "chen.vp@company.com",
+      "department": "Engineering",
+      "category": "Software"
+    },
+    {
+      "id": "exp_auth_401",
+      "description": "Financial audit tools",
+      "amount": 500,
+      "date": "2024-02-05",
+      "status": "Pending",
+      "submittedBy": "frank.finance@company.com",
+      "department": "Finance",
+      "category": "Tools"
+    },
+    {
+      "description": "Ticket to Copenhagen",
+      "amount": 600,
+      "date": "2025-09-10",
+      "status": "Pending",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Travel",
+      "id": "exp_auth_103"
+    },
+    {
+      "description": "Food",
+      "amount": 200,
+      "date": "2025-09-10",
+      "status": "Approved",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Meals",
+      "id": "exp_auth_104",
+      "approvedBy": "raj.manager@company.com",
+      "approvedDate": "2025-09-10"
+    },
+    {
+      "description": "NDC CPH",
+      "amount": 2900,
+      "date": "2025-10-25",
+      "status": "Pending",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Travel",
+      "id": "exp_auth_105"
+    },
+    {
+      "id": "test_123",
+      "description": "Test expense",
+      "amount": 100,
+      "date": "2024-01-01",
+      "status": "Pending",
+      "submittedBy": "raj.manager@company.com",
+      "department": "Engineering",
+      "category": "Test"
+    }
+  ]
+}

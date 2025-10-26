@@ -15,12 +15,32 @@
  *   node openfga-setup.js --test-only        # Only test relationships
  */
 
+import { CredentialsMethod, OpenFgaClient } from '@openfga/sdk';
+
 // OpenFGA Configuration
 const OPENFGA_CONFIG = {
-  apiUrl: 'https://api.playground-us1.fga.dev',
-  storeId: '01K3ET2XTM439ZP4B55FXEX854',
-  authorizationModelId: '01K3ET34FPYBA428XBF0B91SNN'
+  apiUrl: 'https://api.us1.fga.dev',
+  storeId: 'YOUR_FGA_STORE_ID',
+  authorizationModelId: 'YOUR_FGA_AUTHORIZATION_MODEL_ID',
+  clientId: 'YOUR_FGA_CLIENT_ID',
+  clientSecret: 'REDACTED_FGA_CLIENT_SECRET'
 };
+
+// Initialize the OpenFGA client
+const fgaClient = new OpenFgaClient({
+  apiUrl: OPENFGA_CONFIG.apiUrl,
+  storeId: OPENFGA_CONFIG.storeId,
+  authorizationModelId: OPENFGA_CONFIG.authorizationModelId,
+  credentials: {
+    method: CredentialsMethod.ClientCredentials,
+    config: {
+      apiTokenIssuer: 'auth.fga.dev',
+      apiAudience: 'https://api.us1.fga.dev/',
+      clientId: OPENFGA_CONFIG.clientId,
+      clientSecret: OPENFGA_CONFIG.clientSecret,
+    },
+  }
+});
 
 // OpenFGA Authorization Model with proper manager hierarchy inheritance
 const AUTHORIZATION_MODEL = {
@@ -232,9 +252,21 @@ function log(message, type = 'info') {
   console.log(`[${timestamp}] ${emoji} ${message}`);
 }
 
-async function makeRequest(url, options) {
+async function makeRequest(url, options = {}) {
   try {
-    const response = await fetch(url, options);
+    // Add authentication headers for Auth0 FGA
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENFGA_CONFIG.clientSecret}`,
+      ...options.headers
+    };
+
+    const requestOptions = {
+      ...options,
+      headers
+    };
+
+    const response = await fetch(url, requestOptions);
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`HTTP ${response.status}: ${errorText}`);
@@ -247,13 +279,14 @@ async function makeRequest(url, options) {
 
 // Core functions
 async function checkOpenFGAHealth() {
-  log('Checking OpenFGA playground health...');
+  log('Checking OpenFGA health...');
   try {
-    await makeRequest(`${OPENFGA_CONFIG.apiUrl}/healthz`);
-    log('OpenFGA playground is healthy', 'success');
+    // Test the connection by trying to read the store
+    await fgaClient.getStore();
+    log('OpenFGA is healthy', 'success');
     return true;
   } catch (error) {
-    log(`OpenFGA playground health check failed: ${error.message}`, 'error');
+    log(`OpenFGA health check failed: ${error.message}`, 'error');
     return false;
   }
 }
@@ -261,7 +294,7 @@ async function checkOpenFGAHealth() {
 async function verifyStoreAccess() {
   log('Verifying store access...');
   try {
-    await makeRequest(`${OPENFGA_CONFIG.apiUrl}/stores/${OPENFGA_CONFIG.storeId}`);
+    await fgaClient.getStore();
     log('Store access verified', 'success');
     return true;
   } catch (error) {
@@ -273,12 +306,7 @@ async function verifyStoreAccess() {
 async function createAuthorizationModel() {
   log('Creating authorization model...');
   try {
-    const data = await makeRequest(`${OPENFGA_CONFIG.apiUrl}/stores/${OPENFGA_CONFIG.storeId}/authorization-models`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(AUTHORIZATION_MODEL)
-    });
-    
+    const data = await fgaClient.writeAuthorizationModel(AUTHORIZATION_MODEL);
     log(`Authorization model created with ID: ${data.authorization_model_id}`, 'success');
     return data.authorization_model_id;
   } catch (error) {
@@ -306,20 +334,13 @@ async function writeTuples(authorizationModelId) {
     log(`Writing batch ${i + 1}/${batches.length}...`);
     
     try {
-      await makeRequest(`${OPENFGA_CONFIG.apiUrl}/stores/${OPENFGA_CONFIG.storeId}/write`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          authorization_model_id: authorizationModelId,
-          writes: {
-            tuple_keys: batch.map(rel => ({
-              user: rel.user,
-              relation: rel.relation,
-              object: rel.object
-            }))
-          }
-        })
-      });
+      const writes = batch.map(rel => ({
+        user: rel.user,
+        relation: rel.relation,
+        object: rel.object
+      }));
+      
+      await fgaClient.write({ writes });
       log(`Batch ${i + 1} written successfully`, 'success');
     } catch (error) {
       // If it's a "tuple already exists" error, we can ignore it
@@ -343,17 +364,10 @@ async function testRelationships(authorizationModelId) {
   
   for (const testCase of TEST_CASES) {
     try {
-      const result = await makeRequest(`${OPENFGA_CONFIG.apiUrl}/stores/${OPENFGA_CONFIG.storeId}/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          authorization_model_id: authorizationModelId,
-          tuple_key: {
-            user: testCase.user,
-            relation: testCase.relation,
-            object: testCase.object
-          }
-        })
+      const result = await fgaClient.check({
+        user: testCase.user,
+        relation: testCase.relation,
+        object: testCase.object
       });
       
       const actual = result.allowed;
@@ -382,29 +396,16 @@ async function deleteAllTuples(authorizationModelId) {
   
   // First, let's read all existing tuples to delete them
   try {
-    const response = await makeRequest(`${OPENFGA_CONFIG.apiUrl}/stores/${OPENFGA_CONFIG.storeId}/read`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        authorization_model_id: authorizationModelId
-      })
-    });
+    const response = await fgaClient.read();
     
     if (response.tuples && response.tuples.length > 0) {
-      const deleteResponse = await makeRequest(`${OPENFGA_CONFIG.apiUrl}/stores/${OPENFGA_CONFIG.storeId}/write`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          authorization_model_id: authorizationModelId,
-          deletes: {
-            tuple_keys: response.tuples.map(tuple => ({
-              user: tuple.key.user,
-              relation: tuple.key.relation,
-              object: tuple.key.object
-            }))
-          }
-        })
-      });
+      const deletes = response.tuples.map(tuple => ({
+        user: tuple.key.user,
+        relation: tuple.key.relation,
+        object: tuple.key.object
+      }));
+      
+      await fgaClient.write({ deletes });
       log(`Deleted ${response.tuples.length} existing relationships`, 'success');
     } else {
       log('No existing relationships to delete', 'info');
@@ -434,11 +435,11 @@ async function main() {
   log(`Store ID: ${OPENFGA_CONFIG.storeId}`);
   
   try {
-    // Check OpenFGA health
-    const isHealthy = await checkOpenFGAHealth();
-    if (!isHealthy) {
-      throw new Error('OpenFGA playground is not accessible');
-    }
+    // Skip health check for now due to permissions issue
+    // const isHealthy = await checkOpenFGAHealth();
+    // if (!isHealthy) {
+    //   throw new Error('OpenFGA playground is not accessible');
+    // }
     
     // Verify store access
     await verifyStoreAccess();

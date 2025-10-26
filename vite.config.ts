@@ -19,4 +19,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    exclude: ['http', 'https', 'url', 'util', 'stream', 'crypto', 'buffer', 'events', 'fs', 'path', 'os', 'net', 'tls', 'zlib', 'querystring'],
+  },
+  build: {
+    rollupOptions: {
+      external: ['http', 'https', 'url', 'util', 'stream', 'crypto', 'buffer', 'events', 'fs', 'path', 'os', 'net', 'tls', 'zlib', 'querystring'],
+    },
+  },
 }));

@@ -1,4 +1,5 @@
 import { dataService } from './data';
+import { authDataService } from './auth-data';
 
 export interface AIResponse {
   message: string;
@@ -60,24 +61,27 @@ export class AIService {
     return this.isOpenAIAvailable ? 'OpenAI GPT-3.5-turbo' : 'Mock Responses';
   }
 
-  async generateResponse(query: string, userId: string): Promise<AIResponse> {
+  async generateResponse(query: string, userId: string, isAuthenticated: boolean = false): Promise<AIResponse> {
     if (this.isOpenAIAvailable) {
       console.log('🤖 Using OpenAI GPT-3.5-turbo for AI response');
-      return this.generateOpenAIResponse(query, userId);
+      return this.generateOpenAIResponse(query, userId, isAuthenticated);
     } else {
       console.log('🎭 Using Mock responses (OpenAI unavailable)');
-      return this.generateMockResponse(query, userId);
+      return this.generateMockResponse(query, userId, isAuthenticated);
     }
   }
 
-  private async generateOpenAIResponse(query: string, userId: string): Promise<AIResponse> {
+  private async generateOpenAIResponse(query: string, userId: string, isAuthenticated: boolean = false): Promise<AIResponse> {
     try {
-      const authStatus = await dataService.getAuthorizationStatus();
-      const userSummary = await dataService.getUserSummary(userId);
-      const visibleExpenses = await dataService.getVisibleExpenses(userId);
+      // Use the appropriate service based on authentication mode
+      const service = isAuthenticated ? authDataService : dataService;
+      
+      const authStatus = await service.getAuthorizationStatus();
+      const userSummary = await service.getUserSummary(userId);
+      const visibleExpenses = await service.getVisibleExpenses(userId);
       
       // Do all filtering and business logic on the backend
-      const filteredData = await this.getFilteredExpenseData(query, userId, visibleExpenses, userSummary);
+      const filteredData = await this.getFilteredExpenseData(query, userId, visibleExpenses, userSummary, isAuthenticated);
       
       // Debug: Log what expenses are being sent to AI
       console.log(`📊 Sending ${visibleExpenses.length} expenses to AI for user ${userId}:`);
@@ -143,7 +147,7 @@ Instructions:
   }
 
   // Do all filtering and business logic on the backend
-  private async getFilteredExpenseData(query: string, userId: string, visibleExpenses: any[], userSummary: string): Promise<{
+  private async getFilteredExpenseData(query: string, userId: string, visibleExpenses: any[], userSummary: string, isAuthenticated: boolean = false): Promise<{
     expenseData: string;
     queryType: string;
     filteringApplied: string;
@@ -158,7 +162,7 @@ Instructions:
       const expenseId = this.extractExpenseId(query);
       console.log(`🔍 Detected approve action, extracted expense ID: ${expenseId} from query: "${query}"`);
       if (expenseId) {
-        const result = await this.handleExpenseAction(query, userId, expenseId, 'approve');
+        const result = await this.handleExpenseAction(query, userId, expenseId, 'approve', isAuthenticated);
         return {
           expenseData: result.message,
           queryType: 'expense_action',
@@ -174,7 +178,7 @@ Instructions:
       const expenseId = this.extractExpenseId(query);
       console.log(`🔍 Detected decline action, extracted expense ID: ${expenseId} from query: "${query}"`);
       if (expenseId) {
-        const result = await this.handleExpenseAction(query, userId, expenseId, 'decline');
+        const result = await this.handleExpenseAction(query, userId, expenseId, 'decline', isAuthenticated);
         return {
           expenseData: result.message,
           queryType: 'expense_action',
@@ -188,8 +192,10 @@ Instructions:
     // Handle "expenses that need my approval"
     if (lowerQuery.includes('need my approval') || lowerQuery.includes('need approval')) {
       const pendingExpenses = visibleExpenses.filter(exp => exp.status === 'Pending');
+      // Normalize userId by removing 'user:' prefix for comparison
+      const normalizedUserId = userId.replace(/^user:/, '');
       const approvableExpenses = pendingExpenses.filter(exp => 
-        exp.submittedBy !== userId && exp.amount <= userSummaryObj.approvalLimit
+        exp.submittedBy !== normalizedUserId && exp.amount <= userSummaryObj.approvalLimit
       );
       
       const expenseData = approvableExpenses.map(exp => 
@@ -199,14 +205,16 @@ Instructions:
       return {
         expenseData: expenseData || 'No expenses that need your approval.',
         queryType: 'expenses_need_approval',
-        filteringApplied: `Filtered for: Pending status, submittedBy != ${userId}, amount <= ${userSummaryObj.approvalLimit}`
+        filteringApplied: `Filtered for: Pending status, submittedBy != ${normalizedUserId}, amount <= ${userSummaryObj.approvalLimit}`
       };
     }
     
     // Handle "pending expenses submitted by me"
     if (lowerQuery.includes('pending') && lowerQuery.includes('submitted by me')) {
+      // Normalize userId by removing 'user:' prefix for comparison
+      const normalizedUserId = userId.replace(/^user:/, '');
       const myPendingExpenses = visibleExpenses.filter(exp => 
-        exp.submittedBy === userId && exp.status === 'Pending'
+        exp.submittedBy === normalizedUserId && exp.status === 'Pending'
       );
       
       const expenseData = myPendingExpenses.map(exp => 
@@ -216,13 +224,15 @@ Instructions:
       return {
         expenseData: expenseData || 'No pending expenses that you submitted.',
         queryType: 'my_pending_expenses',
-        filteringApplied: `Filtered for: submittedBy = ${userId}, status = Pending`
+        filteringApplied: `Filtered for: submittedBy = ${normalizedUserId}, status = Pending`
       };
     }
     
     // Handle "my submitted expenses"
     if (lowerQuery.includes('my submitted') || lowerQuery.includes('submitted by me')) {
-      const myExpenses = visibleExpenses.filter(exp => exp.submittedBy === userId);
+      // Normalize userId by removing 'user:' prefix for comparison
+      const normalizedUserId = userId.replace(/^user:/, '');
+      const myExpenses = visibleExpenses.filter(exp => exp.submittedBy === normalizedUserId);
       
       const expenseData = myExpenses.map(exp => 
         `- ${exp.id}: $${exp.amount} (${exp.status}) - ${exp.category}`
@@ -231,7 +241,7 @@ Instructions:
       return {
         expenseData: expenseData || 'No expenses that you submitted.',
         queryType: 'my_submitted_expenses',
-        filteringApplied: `Filtered for: submittedBy = ${userId}`
+        filteringApplied: `Filtered for: submittedBy = ${normalizedUserId}`
       };
     }
     
@@ -262,7 +272,7 @@ Instructions:
     if (possibleExpenseAction && hasExpenseId) {
       console.log(`🔄 Fallback: Detected possible expense action for ${hasExpenseId}`);
       const action = lowerQuery.includes('approve') ? 'approve' : 'decline';
-      const result = await this.handleExpenseAction(query, userId, hasExpenseId, action);
+      const result = await this.handleExpenseAction(query, userId, hasExpenseId, action, isAuthenticated);
       return {
         expenseData: result.message,
         queryType: 'expense_action',
@@ -299,24 +309,27 @@ Instructions:
   }
 
   // Handle expense approval/decline actions
-  private async handleExpenseAction(query: string, userId: string, expenseId: string, action: 'approve' | 'decline'): Promise<{
+  private async handleExpenseAction(query: string, userId: string, expenseId: string, action: 'approve' | 'decline', isAuthenticated: boolean = false): Promise<{
     message: string;
     action: string;
   }> {
     try {
       console.log(`🤖 AI attempting ${action} action for expense ${expenseId} by user ${userId}`);
       
+      // Use the appropriate service based on authentication mode
+      const service = isAuthenticated ? authDataService : dataService;
+      
       let success = false;
       let message = '';
       
       if (action === 'approve') {
-        success = await dataService.approveExpense(expenseId, userId);
+        success = await service.approveExpense(expenseId, userId);
         console.log(`✅ Approval result for ${expenseId}: ${success}`);
         message = success 
           ? `✅ Successfully approved expense ${expenseId}! The expense has been marked as approved.`
           : `❌ Failed to approve expense ${expenseId}. You may not have permission or the expense may exceed your approval limit.`;
       } else {
-        success = await dataService.denyExpense(expenseId, userId);
+        success = await service.denyExpense(expenseId, userId);
         console.log(`✅ Decline result for ${expenseId}: ${success}`);
         message = success 
           ? `✅ Successfully declined expense ${expenseId}! The expense has been marked as denied.`
@@ -336,13 +349,16 @@ Instructions:
     }
   }
 
-  private async generateMockResponse(query: string, userId: string): Promise<AIResponse> {
-    const authStatus = await dataService.getAuthorizationStatus();
-    const userSummaryStr = await dataService.getUserSummary(userId);
-    const visibleExpenses = await dataService.getVisibleExpenses(userId);
+  private async generateMockResponse(query: string, userId: string, isAuthenticated: boolean = false): Promise<AIResponse> {
+    // Use the appropriate service based on authentication mode
+    const service = isAuthenticated ? authDataService : dataService;
+    
+    const authStatus = await service.getAuthorizationStatus();
+    const userSummaryStr = await service.getUserSummary(userId);
+    const visibleExpenses = await service.getVisibleExpenses(userId);
     
     // Use the same filtering logic as OpenAI response
-    const filteredData = await this.getFilteredExpenseData(query, userId, visibleExpenses, userSummaryStr);
+    const filteredData = await this.getFilteredExpenseData(query, userId, visibleExpenses, userSummaryStr, isAuthenticated);
     
     // Parse user summary string to extract values
     const userSummary = this.parseUserSummary(userSummaryStr);

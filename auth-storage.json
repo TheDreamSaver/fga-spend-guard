@@ -1,0 +1,110 @@
+{
+  "expenses": [
+    {
+      "id": "exp_101",
+      "description": "Laptop accessories",
+      "amount": 150,
+      "date": "2024-01-15",
+      "status": "Approved",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Equipment",
+      "approvedBy": "raj.manager@company.com",
+      "approvedDate": "2025-09-10"
+    },
+    {
+      "id": "exp_102",
+      "description": "Conference registration",
+      "amount": 300,
+      "date": "2024-01-20",
+      "status": "Pending",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Training"
+    },
+    {
+      "id": "exp_103",
+      "description": "Team lunch",
+      "amount": 200,
+      "date": "2024-01-25",
+      "status": "Pending",
+      "submittedBy": "raj.manager@company.com",
+      "department": "Engineering",
+      "category": "Meals"
+    },
+    {
+      "id": "exp_104",
+      "description": "Software licenses",
+      "amount": 1200,
+      "date": "2024-02-01",
+      "status": "Pending",
+      "submittedBy": "chen.vp@company.com",
+      "department": "Engineering",
+      "category": "Software"
+    },
+    {
+      "id": "exp_105",
+      "description": "Financial audit tools",
+      "amount": 500,
+      "date": "2024-02-05",
+      "status": "Pending",
+      "submittedBy": "frank.finance@company.com",
+      "department": "Finance",
+      "category": "Tools"
+    },
+    {
+      "id": "exp_106",
+      "description": "Ticket to Copenhagen",
+      "amount": 600,
+      "date": "2025-09-10",
+      "status": "Pending",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Travel"
+    },
+    {
+      "id": "exp_107",
+      "description": "Food",
+      "amount": 200,
+      "date": "2025-09-10",
+      "status": "Approved",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Meals",
+      "approvedBy": "raj.manager@company.com",
+      "approvedDate": "2025-09-10"
+    },
+    {
+      "id": "exp_108",
+      "description": "NDC CPH",
+      "amount": 2900,
+      "date": "2025-10-25",
+      "status": "Pending",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Travel"
+    },
+    {
+      "id": "exp_109",
+      "description": "Test Subscription",
+      "amount": 99,
+      "date": "2025-10-25",
+      "status": "Approved",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Software",
+      "approvedBy": "user:raj.manager@company.com",
+      "approvedAt": "2025-10-26T19:52:55.121Z"
+    },
+    {
+      "id": "exp_110",
+      "description": "Veggies",
+      "amount": 80,
+      "date": "2025-10-25",
+      "status": "Pending",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Meals"
+    }
+  ]
+}
