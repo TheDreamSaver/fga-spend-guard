@@ -38,7 +38,7 @@
 7. Click **"Create Web Service"**
 8. **Wait 2-3 minutes** for deployment
 9. **Copy the URL:** `https://smart-spend-backend.onrender.com` ⚠️ SAVE THIS!
-
+https://smart-spend-backend-oj1y.onrender.com
 ---
 
 ## ✅ Step 2: Deploy Frontend to Vercel (5 minutes)
@@ -55,7 +55,7 @@
    - **Output Directory:** `dist`
 
 5. Click **"Environment Variables"** and add:
-   - `VITE_API_URL` = `https://smart-spend-backend.onrender.com` (your Render URL)
+   - `VITE_API_URL` = `https://smart-spend-backend-oj1y.onrender.com` (use YOUR actual Render URL!)
    - `VITE_OPENAI_API_KEY` = (optional - add your OpenAI API key if you want AI to work, or leave empty to use mock responses)
 
 6. Click **"Deploy"**
