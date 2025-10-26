@@ -30,6 +30,13 @@ export class AIService {
   }
 
   private async checkOpenAIAvailability(): Promise<void> {
+    // If no API key is provided, use mock responses
+    if (!this.openaiApiKey || this.openaiApiKey.trim() === '') {
+      this.isOpenAIAvailable = false;
+      console.log('🔍 No OpenAI API key provided, using mock responses');
+      return;
+    }
+
     try {
       const response = await fetch('https://api.openai.com/v1/models', {
         headers: {
