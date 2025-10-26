@@ -8,20 +8,20 @@ import { CredentialsMethod, OpenFgaClient } from '@openfga/sdk';
 
 // OpenFGA Configuration for Auth0 FGA (Demo Mode)
 const OPENFGA_CONFIG = {
-  apiUrl: 'https://api.us1.fga.dev',
-  storeId: 'YOUR_FGA_STORE_ID',
-  authorizationModelId: 'YOUR_FGA_AUTHORIZATION_MODEL_ID',
-  clientId: 'YOUR_FGA_CLIENT_ID',
-  clientSecret: 'REDACTED_FGA_CLIENT_SECRET'
+  apiUrl: process.env.OPENFGA_API_URL || 'https://api.us1.fga.dev',
+  storeId: process.env.OPENFGA_STORE_ID || 'YOUR_FGA_STORE_ID',
+  authorizationModelId: process.env.OPENFGA_AUTHORIZATION_MODEL_ID || 'YOUR_FGA_AUTHORIZATION_MODEL_ID',
+  clientId: process.env.OPENFGA_CLIENT_ID || 'YOUR_FGA_CLIENT_ID',
+  clientSecret: process.env.OPENFGA_CLIENT_SECRET || 'REDACTED_FGA_CLIENT_SECRET'
 };
 
 // OpenFGA Configuration for Auth0 FGA (Authenticated Mode)
 const AUTH_OPENFGA_CONFIG = {
-  apiUrl: 'https://api.us1.fga.dev',
-  storeId: 'YOUR_FGA_STORE_ID',
-  authorizationModelId: 'YOUR_FGA_AUTHORIZATION_MODEL_ID',
-  clientId: 'YOUR_FGA_CLIENT_ID',
-  clientSecret: 'REDACTED_FGA_CLIENT_SECRET'
+  apiUrl: process.env.AUTH_OPENFGA_API_URL || 'https://api.us1.fga.dev',
+  storeId: process.env.AUTH_OPENFGA_STORE_ID || 'YOUR_FGA_STORE_ID',
+  authorizationModelId: process.env.AUTH_OPENFGA_AUTHORIZATION_MODEL_ID || 'YOUR_FGA_AUTHORIZATION_MODEL_ID',
+  clientId: process.env.AUTH_OPENFGA_CLIENT_ID || 'YOUR_FGA_CLIENT_ID',
+  clientSecret: process.env.AUTH_OPENFGA_CLIENT_SECRET || 'REDACTED_FGA_CLIENT_SECRET'
 };
 
 // Initialize the OpenFGA client (Demo Mode)
@@ -57,7 +57,7 @@ const authFgaClient = new OpenFgaClient({
 });
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
