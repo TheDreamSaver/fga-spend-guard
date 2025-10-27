@@ -1,11 +1,12 @@
 import { Expense } from './fga';
+import { API_BASE_URL } from './config';
 
 // API-based storage service for persistent JSON file storage
 // In production, you'd use a proper database
 
 class StorageService {
   private static instance: StorageService;
-  private apiBaseUrl = 'http://localhost:3001/api';
+  private apiBaseUrl = `${API_BASE_URL}/api`;
   private defaultExpenses: Expense[] = [
     {
       id: 'exp_101',

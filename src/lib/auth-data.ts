@@ -3,9 +3,10 @@
 
 import { authOpenfgaService } from './auth-openfga';
 import { Expense } from './fga';
+import { API_BASE_URL } from './config';
 
 class AuthDataService {
-  private baseUrl = 'http://localhost:3001/api/auth';
+  private baseUrl = `${API_BASE_URL}/api/auth`;
 
   async getExpenses(): Promise<Expense[]> {
     try {

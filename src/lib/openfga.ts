@@ -1,7 +1,8 @@
 import { dataService } from './data';
+import { API_BASE_URL as ConfigAPI_BASE_URL } from './config';
 
 // Backend API configuration
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = ConfigAPI_BASE_URL;
 
 export class OpenFGAService {
   private static instance: OpenFGAService;

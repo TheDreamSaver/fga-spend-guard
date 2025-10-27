@@ -1,6 +1,8 @@
 // OpenFGA Service for Authenticated Mode
 // This service handles authorization for authenticated users
 
+import { API_BASE_URL } from './config';
+
 interface AuthOpenFGAService {
   check(user: string, relation: string, object: string): Promise<boolean>;
   listObjects(user: string, relation: string, type: string): Promise<string[]>;
@@ -11,7 +13,7 @@ interface AuthOpenFGAService {
 }
 
 class AuthOpenFGAServiceImpl implements AuthOpenFGAService {
-  private baseUrl = 'http://localhost:3001/api/auth/auth';
+  private baseUrl = `${API_BASE_URL}/api/auth/auth`;
 
   async check(user: string, relation: string, object: string): Promise<boolean> {
     try {
