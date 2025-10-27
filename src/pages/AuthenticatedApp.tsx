@@ -30,6 +30,11 @@ const AuthenticatedApp = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
   };
 
+  const handleBackToLanding = () => {
+    // Sign out and go to landing page
+    logout({ logoutParams: { returnTo: window.location.origin } });
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -90,7 +95,7 @@ const AuthenticatedApp = () => {
           <div className="flex items-center justify-center gap-4 mb-4">
             <Button 
               variant="outline" 
-              onClick={() => navigate('/')}
+              onClick={handleBackToLanding}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
