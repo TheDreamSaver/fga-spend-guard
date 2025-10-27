@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const { isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
 
   // Handle Auth0 callback - if user is authenticated, redirect to app
   useEffect(() => {
@@ -31,6 +31,10 @@ const LandingPage = () => {
         returnTo: '/app'
       }
     });
+  };
+
+  const handleSignOut = () => {
+    logout({ logoutParams: { returnTo: window.location.origin } });
   };
 
   return (
@@ -103,15 +107,27 @@ const LandingPage = () => {
             
             <div className="text-gray-400 text-sm">or</div>
             
-            <Button 
-              onClick={handleLogin}
-              variant="outline"
-              size="lg"
-              className="border-gray-300 hover:bg-gray-50 px-8 py-4 text-lg min-w-[200px]"
-            >
-              <LogIn className="mr-2 h-6 w-6" />
-              Sign In
-            </Button>
+            {isAuthenticated ? (
+              <Button 
+                onClick={handleSignOut}
+                variant="outline"
+                size="lg"
+                className="border-red-300 hover:bg-red-50 px-8 py-4 text-lg min-w-[200px]"
+              >
+                <LogIn className="mr-2 h-6 w-6" />
+                Sign Out
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleLogin}
+                variant="outline"
+                size="lg"
+                className="border-gray-300 hover:bg-gray-50 px-8 py-4 text-lg min-w-[200px]"
+              >
+                <LogIn className="mr-2 h-6 w-6" />
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
 
