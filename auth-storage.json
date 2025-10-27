@@ -20,7 +20,9 @@
       "status": "Pending",
       "submittedBy": "dina.dev@company.com",
       "department": "Engineering",
-      "category": "Training"
+      "category": "Training",
+      "approvedBy": "user:raj.manager@company.com",
+      "approvedAt": "2025-10-26T20:26:56.049Z"
     },
     {
       "id": "exp_103",
@@ -82,7 +84,9 @@
       "status": "Pending",
       "submittedBy": "dina.dev@company.com",
       "department": "Engineering",
-      "category": "Travel"
+      "category": "Travel",
+      "deniedBy": "user:raj.manager@company.com",
+      "deniedAt": "2025-10-26T20:28:12.156Z"
     },
     {
       "id": "exp_109",
@@ -94,7 +98,7 @@
       "department": "Engineering",
       "category": "Software",
       "approvedBy": "user:raj.manager@company.com",
-      "approvedAt": "2025-10-26T19:52:55.121Z"
+      "approvedAt": "2025-10-26T20:27:55.241Z"
     },
     {
       "id": "exp_110",
@@ -104,7 +108,35 @@
       "status": "Pending",
       "submittedBy": "dina.dev@company.com",
       "department": "Engineering",
-      "category": "Meals"
+      "category": "Meals",
+      "approvedBy": "user:raj.manager@company.com",
+      "approvedAt": "2025-10-26T20:28:04.758Z"
+    },
+    {
+      "id": "exp_111",
+      "description": "Cursor Subscription",
+      "amount": 20,
+      "date": "2025-10-26",
+      "status": "Approved",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Software",
+      "approvedBy": "user:raj.manager@company.com",
+      "approvedAt": "2025-10-26T21:43:15.231Z",
+      "deniedBy": "user:raj.manager@company.com",
+      "deniedAt": "2025-10-26T20:26:51.331Z"
+    },
+    {
+      "id": "exp_112",
+      "description": "Hackathon Food",
+      "amount": 30,
+      "date": "2025-10-26",
+      "status": "Approved",
+      "submittedBy": "dina.dev@company.com",
+      "department": "Engineering",
+      "category": "Meals",
+      "approvedBy": "user:raj.manager@company.com",
+      "approvedAt": "2025-10-26T21:04:05.247Z"
     }
   ]
 }

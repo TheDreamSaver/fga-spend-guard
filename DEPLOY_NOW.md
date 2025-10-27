@@ -61,7 +61,7 @@ https://smart-spend-backend-oj1y.onrender.com
 6. Click **"Deploy"**
 7. Wait 3 minutes
 8. **Copy your Vercel URL:** `https://fga-spend-guard.vercel.app` ⚠️ SAVE THIS!
-
+https://fga-spend-guard-3.vercel.app/
 ---
 
 ## ✅ Step 3: Update CORS (2 minutes)
