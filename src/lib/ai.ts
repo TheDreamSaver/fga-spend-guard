@@ -1,3 +1,5 @@
+import { apiFetch } from './api';
+import { API_BASE_URL } from './config';
 import { dataService } from './data';
 import { authDataService } from './auth-data';
 
@@ -10,17 +12,10 @@ export interface AIResponse {
 
 export class AIService {
   private static instance: AIService;
-  private openaiApiKey: string = import.meta.env.VITE_OPENAI_API_KEY || '';
-  private openaiModel: string = 'gpt-3.5-turbo';
-  private isOpenAIAvailable: boolean = true;
+  private openaiModel = 'gpt-3.5-turbo';
+  private isOpenAIAvailable = false;
 
-  private constructor() {
-    // Initialize with OpenAI settings from environment variable
-    // Falls back to empty string if not set (will use mock responses)
-    this.openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
-    this.openaiModel = 'gpt-3.5-turbo';
-    this.checkOpenAIAvailability();
-  }
+  private constructor() { this.checkOpenAIAvailability(); }
 
   static getInstance(): AIService {
     if (!AIService.instance) {
@@ -30,32 +25,13 @@ export class AIService {
   }
 
   private async checkOpenAIAvailability(): Promise<void> {
-    // If no API key is provided, use mock responses
-    if (!this.openaiApiKey || this.openaiApiKey.trim() === '') {
-      this.isOpenAIAvailable = false;
-      console.log('🔍 No OpenAI API key provided, using mock responses');
-      return;
-    }
-
     try {
-      const response = await fetch('https://api.openai.com/v1/models', {
-        headers: {
-          'Authorization': `Bearer ${this.openaiApiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      this.isOpenAIAvailable = response.ok;
-      console.log(`🔍 OpenAI API Status: ${this.isOpenAIAvailable ? '✅ Available' : '❌ Unavailable'}`);
-    } catch (error) {
-      this.isOpenAIAvailable = false;
-      console.log('❌ OpenAI API Error:', error);
-    }
-  }
-
-  setOpenAIConfig(apiKey: string, model: string): void {
-    this.openaiApiKey = apiKey;
-    this.openaiModel = model;
-    this.checkOpenAIAvailability();
+      const response = await apiFetch(`${API_BASE_URL}/api/ai/status`);
+      if (!response.ok) return;
+      const status = await response.json();
+      this.isOpenAIAvailable = status.available === true;
+      this.openaiModel = status.model;
+    } catch { this.isOpenAIAvailable = false; }
   }
 
   getOpenAIStatus(): { available: boolean; model: string } {
@@ -66,7 +42,7 @@ export class AIService {
   }
 
   getCurrentAIMode(): string {
-    return this.isOpenAIAvailable ? 'OpenAI GPT-3.5-turbo' : 'Mock Responses';
+    return this.isOpenAIAvailable ? `OpenAI ${this.openaiModel}` : 'Mock Responses';
   }
 
   async generateResponse(query: string, userId: string, isAuthenticated: boolean = false): Promise<AIResponse> {
@@ -79,82 +55,28 @@ export class AIService {
     }
   }
 
-  private async generateOpenAIResponse(query: string, userId: string, isAuthenticated: boolean = false): Promise<AIResponse> {
-    try {
-      // Use the appropriate service based on authentication mode
+  private async generateOpenAIResponse(query: string, userId: string, isAuthenticated = false): Promise<AIResponse> {
+    // Expense mutations use the protected expense API exactly once, never model text.
+    if (/\b(approve|decline|deny|reject)\b/i.test(query) && this.extractExpenseId(query)) {
       const service = isAuthenticated ? authDataService : dataService;
-      
-      const authStatus = await service.getAuthorizationStatus();
-      const userSummary = await service.getUserSummary(userId);
-      const visibleExpenses = await service.getVisibleExpenses(userId);
-      
-      // Do all filtering and business logic on the backend
-      const filteredData = await this.getFilteredExpenseData(query, userId, visibleExpenses, userSummary, isAuthenticated);
-      
-      // Debug: Log what expenses are being sent to AI
-      console.log(`📊 Sending ${visibleExpenses.length} expenses to AI for user ${userId}:`);
-      console.log('Expenses:', visibleExpenses.map(exp => `${exp.id} (${exp.submittedBy})`));
-      console.log(`🎯 Filtered data for query "${query}":`, filteredData);
-      
-      const systemPrompt = `You are a helpful AI assistant for SmartSpend, an expense management system.
-
-IMPORTANT: Only use the actual data provided below. Do not make up or hallucinate any information.
-
-Current user: ${userId}
-Authorization system: ${authStatus}
-User summary: ${JSON.stringify(userSummary)}
-
-FILTERED EXPENSE DATA (use only these expenses for the response):
-${filteredData.expenseData}
-
-QUERY TYPE: ${filteredData.queryType}
-FILTERING APPLIED: ${filteredData.filteringApplied}
-
-Instructions:
-- Use ONLY the filtered expense data provided above
-- Create a natural, conversational response
-- Include the expense details as provided
-- Do not add or remove any expenses from the filtered list
-- Keep responses concise and helpful
-- Focus on the user's specific question
-- If this is an expense action (approve/decline), acknowledge the action result
-- For approval actions, you can suggest next steps like "Would you like to see other expenses that need approval?"`;
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.openaiApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: this.openaiModel,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: query }
-          ],
-          max_tokens: 500,
-          temperature: 0.7
-        })
+      const summary = await service.getUserSummary(userId);
+      const expenses = await service.getVisibleExpenses(userId);
+      const action = await this.getFilteredExpenseData(query, userId, expenses, summary, isAuthenticated);
+      return { message: action.expenseData, type: 'info', expenseActionPerformed: action.queryType === 'expense_action' };
+    }
+    try {
+      const response = await apiFetch(`${API_BASE_URL}/api/${isAuthenticated ? 'auth/' : ''}ai/chat`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }),
       });
-
-      if (!response.ok) {
-        throw new Error('OpenAI request failed');
-      }
-
+      if (!response.ok) throw new Error('AI is unavailable');
       const data = await response.json();
-      return {
-        message: data.choices[0].message.content,
-        type: 'info',
-        suggestions: await this.getPredefinedQueries(userId),
-        expenseActionPerformed: filteredData.queryType === 'expense_action'
-      };
-    } catch (error) {
-      console.error('OpenAI response error:', error);
-      return this.generateMockResponse(query, userId);
+      return { message: data.message, type: 'info', suggestions: await this.getPredefinedQueries(userId) };
+    } catch {
+      return this.generateMockResponse(query, userId, isAuthenticated);
     }
   }
 
-  // Do all filtering and business logic on the backend
+  // UI query formatting; the API independently enforces record permissions.
   private async getFilteredExpenseData(query: string, userId: string, visibleExpenses: any[], userSummary: string, isAuthenticated: boolean = false): Promise<{
     expenseData: string;
     queryType: string;

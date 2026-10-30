@@ -23,8 +23,7 @@ class DataService {
 
   private async initializeOpenFGA() {
     try {
-      await this.openfgaService.initialize();
-      this.isOpenFGAInitialized = true;
+      this.isOpenFGAInitialized = await this.openfgaService.initialize();
       console.log('✅ OpenFGA initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize OpenFGA:', error);
@@ -92,9 +91,7 @@ class DataService {
 
       console.log(`✅ All checks passed, updating expense ${expenseId} in backend...`);
       const success = await this.storageService.updateExpense(expenseId, {
-        status: 'Approved',
-        approvedBy,
-        approvedDate: new Date().toISOString().split('T')[0]
+        status: 'Approved'
       });
 
       console.log(`✅ Backend update result for ${expenseId}: ${success}`);
@@ -131,9 +128,7 @@ class DataService {
 
       console.log(`✅ All checks passed, updating expense ${expenseId} in backend...`);
       const success = await this.storageService.updateExpense(expenseId, {
-        status: 'Denied',
-        approvedBy: deniedBy,
-        approvedDate: new Date().toISOString().split('T')[0]
+        status: 'Denied'
       });
 
       console.log(`✅ Backend update result for ${expenseId}: ${success}`);
@@ -157,9 +152,7 @@ class DataService {
       }
 
       const success = await this.storageService.updateExpense(expenseId, {
-        status: 'Pending',
-        approvedBy: undefined,
-        approvedDate: undefined
+        status: 'Pending'
       });
 
       return success;
@@ -264,27 +257,7 @@ class DataService {
       throw new Error('Failed to save expense to storage');
     }
 
-    // Create OpenFGA tuple
-    if (this.isOpenFGAInitialized) {
-      try {
-        console.log(`🔧 Creating FGA tuples for new expense ${newExpense.id} by ${expense.submittedBy}`);
-        
-        // Create owner relationship
-        await this.openfgaService.addRelationship(`user:${expense.submittedBy}`, 'owner', `expense:${newExpense.id}`);
-        console.log(`✅ Created owner tuple: user:${expense.submittedBy} -> owner -> expense:${newExpense.id}`);
-        
-        // Create department relationship
-        await this.openfgaService.addRelationship(`department:${expense.department.toLowerCase()}`, 'department', `expense:${newExpense.id}`);
-        console.log(`✅ Created department tuple: department:${expense.department.toLowerCase()} -> department -> expense:${newExpense.id}`);
-        
-        // Note: Manager approval is handled through the user hierarchy (can_manage relation on user type)
-        // No need to create manager tuples on expenses
-      } catch (error) {
-        console.error('❌ Failed to create OpenFGA tuple for new expense:', error);
-      }
-    } else {
-      console.warn('⚠️ OpenFGA not initialized, skipping tuple creation');
-    }
+    // The API creates owner and department relationships.
 
     return newExpense;
   }
@@ -344,14 +317,6 @@ class DataService {
       const storageSuccess = await this.storageService.deleteExpense(expenseId);
       if (!storageSuccess) {
         return { success: false, message: 'Failed to delete expense from storage' };
-      }
-
-      // Delete FGA tuples
-      if (this.isOpenFGAInitialized) {
-        const fgaSuccess = await this.openfgaService.removeAllExpenseTuples(expenseId);
-        if (!fgaSuccess) {
-          console.warn(`⚠️ Failed to delete FGA tuples for ${expenseId}, but storage deletion succeeded`);
-        }
       }
 
       console.log(`✅ Successfully deleted expense ${expenseId}`);
@@ -564,4 +529,4 @@ class DataService {
   }
 }
 
-export const dataService = DataService.getInstance(); 
+export const dataService = DataService.getInstance();

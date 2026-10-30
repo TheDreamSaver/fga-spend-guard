@@ -1,5 +1,5 @@
 // Fine-Grained Authorization (FGA) System
-// This implements a proper authorization system with role-based access control
+// Synthetic personas and display helpers. The API enforces authorization.
 
 export interface User {
   id: string;
@@ -28,6 +28,9 @@ export interface Expense {
   category: string;
   approvedBy?: string;
   approvedDate?: string;
+  deniedBy?: string;
+  deniedDate?: string;
+  denialReason?: string;
 }
 
 // User definitions with proper permission structure
@@ -185,7 +188,7 @@ export class FGAService {
 
   // Evaluate conditions against context
   private evaluateConditions(conditions: Record<string, any>, context?: Record<string, any>): boolean {
-    if (!context) return true;
+    if (!context) return false;
 
     for (const [key, value] of Object.entries(conditions)) {
       if (key === 'all' && value === true) {
@@ -210,4 +213,4 @@ export class FGAService {
 }
 
 // Export singleton instance
-export const fgaService = FGAService.getInstance(); 
+export const fgaService = FGAService.getInstance();

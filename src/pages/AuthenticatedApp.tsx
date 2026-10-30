@@ -1,3 +1,4 @@
+import { setAccessTokenProvider } from '@/lib/api';
 import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -5,14 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Plus, ArrowLeft, LogOut, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import { emailToFGAUserId } from '@/lib/auth-config';
 import ExpenseReports from '@/components/ExpenseReports';
 import AIAssistant from '@/components/AIAssistant';
 import AddExpenseModal from '@/components/AddExpenseModal';
 
 const AuthenticatedApp = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
+  const { user, isAuthenticated, isLoading, loginWithRedirect, logout, getAccessTokenSilently } = useAuth0();
+  const [apiReady, setApiReady] = useState(false);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setAccessTokenProvider(() => getAccessTokenSilently());
+    setApiReady(true);
+    return () => setAccessTokenProvider(null);
+  }, [isAuthenticated, getAccessTokenSilently]);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const expenseReportsRef = useRef<{ refresh: () => void } | null>(null);
 
@@ -36,7 +43,7 @@ const AuthenticatedApp = () => {
   };
 
   // Show loading state
-  if (isLoading) {
+  if (isLoading || (isAuthenticated && !apiReady)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -85,7 +92,8 @@ const AuthenticatedApp = () => {
   }
 
   // Get user ID for FGA
-  const fgaUserId = user?.email ? emailToFGAUserId(user.email) : '';
+  const identity = user?.[import.meta.env.VITE_AUTH0_FGA_USER_CLAIM || 'sub'] || '';
+  const fgaUserId = identity ? `user:${identity}` : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -199,7 +207,7 @@ const AuthenticatedApp = () => {
         onClose={() => setShowAddExpenseModal(false)}
         onExpenseAdded={handleExpenseAdded}
         isAuthenticated={true}
-        userEmail={user?.email || ''}
+        userEmail={identity}
       />
     </div>
   );

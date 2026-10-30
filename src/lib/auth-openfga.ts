@@ -1,3 +1,4 @@
+import { apiFetch } from './api';
 // OpenFGA Service for Authenticated Mode
 // This service handles authorization for authenticated users
 
@@ -17,7 +18,7 @@ class AuthOpenFGAServiceImpl implements AuthOpenFGAService {
 
   async check(user: string, relation: string, object: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/check`, {
+      const response = await apiFetch(`${this.baseUrl}/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -40,7 +41,7 @@ class AuthOpenFGAServiceImpl implements AuthOpenFGAService {
 
   async listObjects(user: string, relation: string, type: string): Promise<string[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/list-objects`, {
+      const response = await apiFetch(`${this.baseUrl}/list-objects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +64,7 @@ class AuthOpenFGAServiceImpl implements AuthOpenFGAService {
 
   async addRelationship(user: string, relation: string, object: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/add-relationship`, {
+      const response = await apiFetch(`${this.baseUrl}/add-relationship`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +81,7 @@ class AuthOpenFGAServiceImpl implements AuthOpenFGAService {
 
   async removeRelationship(user: string, relation: string, object: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/remove-relationship`, {
+      const response = await apiFetch(`${this.baseUrl}/remove-relationship`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +98,7 @@ class AuthOpenFGAServiceImpl implements AuthOpenFGAService {
 
   async removeAllExpenseTuples(expenseId: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/remove-expense-tuples`, {
+      const response = await apiFetch(`${this.baseUrl}/remove-expense-tuples`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ class AuthOpenFGAServiceImpl implements AuthOpenFGAService {
 
   async getStatus(): Promise<any> {
     try {
-      const response = await fetch(`${this.baseUrl}/status`);
+      const response = await apiFetch(`${this.baseUrl}/status`);
       
       if (!response.ok) {
         return { initialized: false, error: 'Failed to get status' };

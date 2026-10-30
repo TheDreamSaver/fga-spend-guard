@@ -1,12 +1,13 @@
+import 'dotenv/config';
 import { CredentialsMethod, OpenFgaClient } from '@openfga/sdk';
 
 // OpenFGA Configuration for Authenticated Mode
 const AUTH_OPENFGA_CONFIG = {
-  apiUrl: 'https://api.us1.fga.dev',
-  storeId: 'YOUR_FGA_STORE_ID',
-  authorizationModelId: 'YOUR_FGA_AUTHORIZATION_MODEL_ID',
-  clientId: 'YOUR_FGA_CLIENT_ID',
-  clientSecret: 'REDACTED_FGA_CLIENT_SECRET'
+  apiUrl: process.env.OPENFGA_API_URL || 'http://127.0.0.1:8081',
+  storeId: process.env.OPENFGA_STORE_ID || '',
+  authorizationModelId: process.env.OPENFGA_AUTHORIZATION_MODEL_ID || '',
+  clientId: process.env.OPENFGA_CLIENT_ID || '',
+  clientSecret: process.env.OPENFGA_CLIENT_SECRET || ''
 };
 
 // Initialize the OpenFGA client for authenticated mode

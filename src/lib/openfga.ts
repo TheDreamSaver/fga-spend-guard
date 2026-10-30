@@ -1,3 +1,4 @@
+import { apiFetch } from './api';
 import { dataService } from './data';
 import { API_BASE_URL as ConfigAPI_BASE_URL } from './config';
 
@@ -52,7 +53,7 @@ export class OpenFGAService {
   async initialize(): Promise<boolean> {
     try {
       // Check backend auth status
-      const response = await fetch(`${API_BASE_URL}/api/auth/status`);
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/status`);
       if (!response.ok) {
         console.warn('Backend auth service not available');
         return false;
@@ -77,7 +78,7 @@ export class OpenFGAService {
   // Verify store access
   private async verifyStoreAccess(): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/status`);
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/status`);
       if (!response.ok) {
         throw new Error(`Store access verification failed: ${response.status}`);
       }
@@ -94,7 +95,7 @@ export class OpenFGAService {
   // Verify the authorization model exists
   private async verifyAuthorizationModel(): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/status`);
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/status`);
       if (!response.ok) {
         throw new Error(`Authorization model verification failed: ${response.status}`);
       }
@@ -124,7 +125,7 @@ export class OpenFGAService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/check`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +169,7 @@ export class OpenFGAService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/list-objects`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/list-objects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -211,7 +212,7 @@ export class OpenFGAService {
 
   async addRelationship(user: string, relation: string, object: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/add-relationship`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/add-relationship`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -239,7 +240,7 @@ export class OpenFGAService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/remove-relationship`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/remove-relationship`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -272,7 +273,7 @@ export class OpenFGAService {
     try {
       console.log(`🗑️ Removing all FGA tuples for expense: ${expenseId}`);
       
-      const response = await fetch(`${API_BASE_URL}/api/auth/remove-expense-tuples`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/auth/remove-expense-tuples`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

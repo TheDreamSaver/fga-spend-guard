@@ -1,3 +1,4 @@
+import { setDemoPersona } from '@/lib/api';
 
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import AddExpenseModal from '@/components/AddExpenseModal';
 
 const DemoApp = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState('dina_dev');
+  const [currentUser, setCurrentUser] = useState(() => { setDemoPersona('dina_dev'); return 'dina_dev'; });
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const expenseReportsRef = useRef<{ refresh: () => void } | null>(null);
 
@@ -62,7 +63,7 @@ const DemoApp = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <Select value={currentUser} onValueChange={setCurrentUser}>
+              <Select value={currentUser} onValueChange={value => { setDemoPersona(value); setCurrentUser(value); }}>
                 <SelectTrigger className="w-full max-w-md">
                   <SelectValue placeholder="Select a user persona" />
                 </SelectTrigger>
@@ -144,7 +145,7 @@ const DemoApp = () => {
         </div>
 
         {/* Add Expense Modal */}
-        <AddExpenseModal 
+        <AddExpenseModal demoUser={currentUser}
           isOpen={showAddExpenseModal}
           onClose={() => setShowAddExpenseModal(false)}
           onExpenseAdded={handleExpenseAdded}

@@ -1,3 +1,4 @@
+import { AUTH0_CONFIGURED, auth0Config } from '@/lib/auth-config';
 import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +24,7 @@ const LandingPage = () => {
   const handleLogin = () => {
     loginWithRedirect({
       authorizationParams: {
-        audience: 'https://smartspend',
+        audience: auth0Config.authorizationParams.audience,
         connection: 'Username-Password-Authentication',
         scope: 'openid profile email',
       },
@@ -120,6 +121,7 @@ const LandingPage = () => {
             ) : (
               <Button 
                 onClick={handleLogin}
+                disabled={!AUTH0_CONFIGURED}
                 variant="outline"
                 size="lg"
                 className="border-gray-300 hover:bg-gray-50 px-8 py-4 text-lg min-w-[200px]"

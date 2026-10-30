@@ -219,14 +219,7 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
           ? await authDataService.approveExpense(expenseId, currentUser)
           : await dataService.approveExpense(expenseId, currentUser);
         if (success) {
-          // Update only the specific expense
-          setExpenses(prevExpenses => 
-            prevExpenses.map(expense => 
-              expense.id === expenseId 
-                ? { ...expense, status: 'Approved', approvedBy: currentUser, approvedDate: new Date().toISOString().split('T')[0] }
-                : expense
-            )
-          );
+          await loadExpenses();
           toast.success("Expense approved successfully!");
         } else {
           toast.error("Failed to approve expense. You may not have permission.");
@@ -243,14 +236,7 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
           ? await authDataService.denyExpense(expenseId, currentUser)
           : await dataService.denyExpense(expenseId, currentUser);
         if (success) {
-          // Update only the specific expense
-          setExpenses(prevExpenses => 
-            prevExpenses.map(expense => 
-              expense.id === expenseId 
-                ? { ...expense, status: 'Denied', approvedBy: currentUser, approvedDate: new Date().toISOString().split('T')[0] }
-                : expense
-            )
-          );
+          await loadExpenses();
           toast.success("Expense denied successfully!");
         } else {
           toast.error("Failed to deny expense. You may not have permission.");
@@ -270,7 +256,7 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
         const result = isAuthenticated 
           ? await authDataService.deleteExpense(expenseId)
           : await dataService.deleteExpense(expenseId, currentUser);
-        if (result.success || result === true) {
+        if ((typeof result === 'boolean' ? result : result.success) || result === true) {
           // Remove the expense from the local state
           setExpenses(prevExpenses => 
             prevExpenses.filter(expense => expense.id !== expenseId)
@@ -287,7 +273,7 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
             loadExpenses();
           }, 500);
         } else {
-          toast.error(result.message || "Failed to delete expense");
+          toast.error((typeof result === 'boolean' ? 'Expense operation failed' : result.message) || "Failed to delete expense");
         }
       } catch (error) {
         console.error('Error deleting expense:', error);
@@ -301,14 +287,7 @@ const ExpenseReports = forwardRef<ExpenseReportsRef, ExpenseReportsProps>(
           ? await authDataService.resetExpense(expenseId, currentUser)
           : await dataService.resetExpenseStatus(expenseId, currentUser);
         if (success) {
-          // Update only the specific expense
-          setExpenses(prevExpenses => 
-            prevExpenses.map(expense => 
-              expense.id === expenseId 
-                ? { ...expense, status: 'Pending', approvedBy: undefined, approvedDate: undefined }
-                : expense
-            )
-          );
+          await loadExpenses();
           toast.success("Expense status reset to pending.");
         } else {
           toast.error("Failed to reset expense status. You may not have permission.");
@@ -527,7 +506,7 @@ const getStatusIcon = (status: string) => {
                                 </div>
                               )}
                               {/* Delete button - only available for expense owner */}
-                              {shortenEmail(expense.submittedBy) === shortenEmail(currentUser) && (
+                              {expense.status !== 'Approved' && expense.submittedBy.replace(/^user:/, '') === currentUser.replace(/^user:/, '') && (
                                 <div className="mt-2">
                                   <Button
                                     size="sm"

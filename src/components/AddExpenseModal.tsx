@@ -15,26 +15,27 @@ interface AddExpenseModalProps {
   onExpenseAdded: () => void;
   isAuthenticated?: boolean;
   userEmail?: string;
+  demoUser?: string;
 }
 
-const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, isAuthenticated = false, userEmail = '' }: AddExpenseModalProps) => {
+const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, isAuthenticated = false, userEmail = '', demoUser = 'dina_dev' }: AddExpenseModalProps) => {
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
     category: '',
-    submittedBy: isAuthenticated ? userEmail : 'dina_dev'
+    submittedBy: isAuthenticated ? userEmail : demoUser
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Update submittedBy when userEmail changes (for authenticated mode)
   useEffect(() => {
-    if (isAuthenticated && userEmail) {
+    if ((isAuthenticated && userEmail) || !isAuthenticated) {
       setFormData(prev => ({
         ...prev,
-        submittedBy: userEmail
+        submittedBy: isAuthenticated ? userEmail : demoUser
       }));
     }
-  }, [isAuthenticated, userEmail]);
+  }, [isAuthenticated, userEmail, demoUser]);
 
   const categories = [
     'Equipment',
@@ -118,14 +119,14 @@ const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, isAuthenticated = fa
             category: formData.category
           });
 
-      toast.success(`Expense ${isAuthenticated ? 'added' : newExpense.id} successfully!`);
+      toast.success(`Expense ${isAuthenticated ? 'added' : (typeof newExpense === 'object' ? newExpense.id : 'created')} successfully!`);
       
       // Reset form
       setFormData({
         description: '',
         amount: '',
         category: '',
-        submittedBy: isAuthenticated ? userEmail : 'dina_dev'
+        submittedBy: isAuthenticated ? userEmail : demoUser
       });
       
       onClose();
@@ -143,7 +144,7 @@ const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, isAuthenticated = fa
       description: '',
       amount: '',
       category: '',
-      submittedBy: isAuthenticated ? userEmail : 'dina_dev'
+      submittedBy: isAuthenticated ? userEmail : demoUser
     });
     onClose();
   };
@@ -220,7 +221,7 @@ const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, isAuthenticated = fa
                     <SelectValue placeholder="Select submitter" />
                   </SelectTrigger>
                   <SelectContent>
-                    {submitters.map((submitter) => (
+                    {submitters.filter(submitter => submitter.id === demoUser).map((submitter) => (
                       <SelectItem key={submitter.id} value={submitter.id}>
                         <div className="flex items-center gap-2">
                           <span>{submitter.name}</span>

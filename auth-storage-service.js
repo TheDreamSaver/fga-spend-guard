@@ -3,7 +3,7 @@ import path from 'path';
 
 class AuthStorageService {
   constructor() {
-    this.storageFile = path.join(process.cwd(), 'auth-storage.json');
+    this.storageFile = path.join(process.env.DATA_DIR || path.join(process.cwd(), '.data'), 'auth-expenses.json');
     this.initializeStorage();
   }
 
@@ -30,6 +30,7 @@ class AuthStorageService {
   writeExpenses(expenses) {
     try {
       const data = { expenses };
+      fs.mkdirSync(path.dirname(this.storageFile), { recursive: true });
       fs.writeFileSync(this.storageFile, JSON.stringify(data, null, 2));
       console.log('✅ Authenticated expenses saved to', this.storageFile);
       return true;

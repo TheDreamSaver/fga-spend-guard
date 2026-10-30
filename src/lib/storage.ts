@@ -1,3 +1,4 @@
+import { apiFetch } from './api';
 import { Expense } from './fga';
 import { API_BASE_URL } from './config';
 
@@ -72,7 +73,7 @@ class StorageService {
   // Load expenses from API
   async loadExpenses(): Promise<Expense[]> {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/expenses`);
+      const response = await apiFetch(`${this.apiBaseUrl}/expenses`);
       if (response.ok) {
         const data = await response.json();
         return data.expenses || [];
@@ -101,7 +102,7 @@ class StorageService {
   // Add a new expense via API
   async addExpense(expense: Expense): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/expenses`, {
+      const response = await apiFetch(`${this.apiBaseUrl}/expenses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +126,7 @@ class StorageService {
   // Update an existing expense via API
   async updateExpense(expenseId: string, updates: Partial<Expense>): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/expenses/${expenseId}`, {
+      const response = await apiFetch(`${this.apiBaseUrl}/expenses/${expenseId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -149,7 +150,7 @@ class StorageService {
   // Delete an expense via API
   async deleteExpense(expenseId: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/expenses/${expenseId}`, {
+      const response = await apiFetch(`${this.apiBaseUrl}/expenses/${expenseId}`, {
         method: 'DELETE',
       });
       
@@ -169,7 +170,7 @@ class StorageService {
   // Reset to default expenses via API
   async resetToDefault(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/expenses/reset`, {
+      const response = await apiFetch(`${this.apiBaseUrl}/expenses/reset`, {
         method: 'POST',
       });
       
@@ -189,7 +190,7 @@ class StorageService {
   // Check if API is available
   async checkApiHealth(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/health`);
+      const response = await apiFetch(`${this.apiBaseUrl}/health`);
       return response.ok;
     } catch (error) {
       return false;

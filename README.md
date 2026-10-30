@@ -1,156 +1,77 @@
-# SmartSpend - Intelligent Expense Management
+# SmartSpend · authorization for an expense agent
 
-A modern expense management application with Fine-Grained Authorization (FGA) and AI-powered assistance, built with React, TypeScript, and OpenFGA.
+A React/TypeScript demo of fine-grained access to expense records. Four synthetic personas illustrate ownership, management hierarchy, finance auditing and approval limits. The Express API applies permissions before returning records or changing an expense.
 
-## 🚀 Features
+The optional AI layer summarizes records selected by the server. It cannot write expenses. Without an OpenAI key, the UI uses its deterministic query responses.
 
-- **Fine-Grained Authorization**: Role-based access control with OpenFGA
-- **AI Assistant**: Cloud-based AI processing with OpenAI API
-- **Multi-Role User System**: Different permission levels for different user types
-- **Real-time Authorization**: Dynamic permission checking
-- **Modern UI**: Built with shadcn/ui and Tailwind CSS
+## Run locally
 
-## 🏗️ Architecture
+Requires Node.js 22.12+ and Docker (or an existing local OpenFGA server).
 
-### Core Services
+```sh
+npm ci
+cp .env.example .env
+docker compose up -d
+node openfga-setup.js
+```
 
-- **OpenFGA Service**: Handles all authorization logic
-- **Data Service**: Centralized data management with authorization awareness
-- **AI Service**: Local AI processing with Ollama integration
-- **FGA Service**: Legacy authorization system (deprecated)
+Copy the printed `OPENFGA_STORE_ID` and `OPENFGA_AUTHORIZATION_MODEL_ID` into `.env`. The setup creates a demo store/model and seeds the synthetic relationships. Start the API and UI in separate terminals:
 
-### User Roles
+```sh
+npm run server
+```
 
-- **Dina Dev** (Software Engineer): Can view own expenses
-- **Raj Manager** (Engineering Manager): Can approve up to $500
-- **Chen VP** (VP of Engineering): Can approve up to $5,000
-- **Frank Finance** (Financial Analyst): Can view all expenses for auditing
-
-## 🛠️ Technology Stack
-
-- **Frontend**: React 18, TypeScript, Vite
-- **UI**: shadcn/ui, Tailwind CSS, Lucide React
-- **Authorization**: OpenFGA (Fine-Grained Authorization)
-- **AI**: OpenAI API (cloud processing)
-- **State Management**: React Hooks + Singleton Services
-
-## 📦 Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd fga-spend-guard-main
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server**
-   ```bash
+```sh
 npm run dev
 ```
 
-## 🔧 Configuration
+Open http://127.0.0.1:8080/demo. The API defaults to port 3001. The Vite and Express hosts bind to loopback. `DEMO_MODE=true` permits the explicit `X-Demo-User` persona header only outside production and on a loopback server. Persona selection is a demonstration tool, not authentication.
 
-### OpenFGA Setup
+## What is enforced
 
-The application uses OpenFGA Playground for authorization. Setup is handled by a single script:
+- Expense lists are filtered by OpenFGA on the server, before reaching the browser or model.
+- The server checks approval permissions, stored amounts, approval limits and self-approval restrictions. Request bodies cannot change the owner or amount while approving.
+- Authorized managers can deny an expense above their spending limit and reset a decision; owners can resubmit a denied expense. Decision identity and dates are stamped by the API.
+- New records belong to the current actor. The API creates their relationship tuples.
+- Expense deletion checks ownership. Clients cannot administer relationship tuples.
+- An unavailable authorization service stops access and generation.
+- OpenAI and hosted OpenFGA credentials stay in server environment variables. No service key belongs in a `VITE_` variable.
 
-```bash
-# Complete setup (model + tuples + tests)
-node openfga-setup.js
+`model.fga` describes the relationship graph. `openfga-setup.js` contains the equivalent API model and demo seed. Approval amounts are additional business rules enforced by the API.
 
-# Only create the authorization model
-node openfga-setup.js --model-only
+## Optional Auth0 mode
 
-# Only write initial relationships
-node openfga-setup.js --tuples-only
+Set the public `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID` and `VITE_AUTH0_AUDIENCE` values for a Single Page Application. Configure its callback as `http://127.0.0.1:8080/app` and its allowed web/logout origins accordingly.
 
-# Only test existing relationships
-node openfga-setup.js --test-only
+On the server, configure `AUTH0_ISSUER_BASE_URL`, `AUTH0_AUDIENCE` and a separate `AUTH_OPENFGA_*` store/model. The API verifies RS256 access-token signatures, issuer, audience and expiry. It derives the actor from `sub`; it does not trust a request-body user ID or email. Seed the authenticated FGA store with those subject IDs and their owner/manager relationships.
+
+`AUTH_USER_PROFILES` is a server-side JSON map from subject IDs to department and approval limit, for example:
+
+```json
+{"auth0|example-subject":{"department":"Engineering","limit":500}}
 ```
 
-### OpenAI AI Setup
+Missing profiles have no approval limit. An optional signed custom identity claim can be selected with matching `AUTH0_FGA_USER_CLAIM` and `VITE_AUTH0_FGA_USER_CLAIM` settings. The UI reads display limits from the authenticated profile endpoint; enforcement remains on the server.
 
-For cloud-based AI processing:
+For a hosted deployment, set `DEMO_MODE=false`, configure the real authentication and frontend origin, and provide durable storage. The file-backed storage here is intended for the local demo. The former Supabase/Vercel handlers return HTTP 410 because they bypassed this API’s identity and authorization checks.
 
-1. **Get OpenAI API Key**
-   - Visit [platform.openai.com](https://platform.openai.com/api-keys)
-   - Create an account and generate an API key
-   - The application is pre-configured with an API key
+## Optional AI summaries
 
-2. **Configure in the app**
-   - The AI Assistant automatically uses OpenAI
-   - No additional configuration required
-   - Falls back to intelligent mock responses if API is unavailable
+Set server-only `OPENAI_API_KEY` and optionally `OPENAI_MODEL`. The existing default is `gpt-3.5-turbo`; choose a model available to your project. The browser sends a query to the API. The API independently loads authorized records and builds the context. There is no embedded key and no Ollama implementation in this version.
 
-## 🎯 Usage
+## Checks
 
-1. **Select a User Persona**: Use the persona selector to switch between different user roles
-2. **View Expenses**: See expenses based on your authorization level
-3. **Approve/Deny**: Take action on expenses within your approval limit
-4. **AI Assistant**: Ask questions about expenses and authorization
-
-## 🔐 Authorization Model
-
-The application uses a simplified OpenFGA model with three main types:
-
-- **user**: Basic user type
-- **department**: Department with member and approval relations
-- **expense**: Expense with owner, manager, department, and permission relations
-
-### Key Relationships
-
-- Users are members of departments
-- Users have approval limits within departments
-- Expenses have owners, managers, and department associations
-- View and approval permissions are computed based on relationships
-
-## 🧪 Testing
-
-The setup script includes comprehensive tests to verify:
-
-- Owner can view own expenses
-- Manager can view and approve managed expenses
-- Department members can view department expenses
-- Department approvers can approve within limits
-- Finance auditors can only view finance expenses
-
-## 📁 Project Structure
-
-```
-src/
-├── components/          # React components
-│   ├── AIAssistant.tsx  # AI chat interface
-│   ├── ExpenseReports.tsx # Expense management
-│   └── ui/             # shadcn/ui components
-├── lib/
-│   ├── openfga.ts      # OpenFGA service
-│   ├── data.ts         # Data management
-│   ├── ai.ts           # AI service
-│   └── fga.ts          # Legacy FGA (deprecated)
-├── pages/
-│   └── Index.tsx       # Main application page
-└── main.tsx            # Application entry point
+```sh
+npm test
+npm run typecheck
+npm run build
+npm audit
 ```
 
-## 🤝 Contributing
+Tests cover record filtering, missing/invalid credentials, user impersonation, direct mutation attempts, approval limits, relationship administration, AI context filtering, service outages, JWT validation and scoped/paginated tuple cleanup. Live Auth0 login and hosted credentials require the operator’s own configuration.
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test the OpenFGA setup
-5. Submit a pull request
+Only synthetic seeds are committed under `data/`. Runtime files live in ignored `.data/`. See [SECURITY.md](SECURITY.md) before publishing this repository’s existing history.
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-For issues related to:
-- **OpenFGA**: Check the setup script output
-- **Ollama**: Ensure the service is running and model is available
-- **Authorization**: Verify the relationships in OpenFGA Playground
+[MIT](LICENSE). Built by Ashish Jha and contributors. More work: [ashishjha.ai](https://ashishjha.ai).

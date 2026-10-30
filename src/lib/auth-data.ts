@@ -1,3 +1,4 @@
+import { apiFetch } from './api';
 // Data Service for Authenticated Mode
 // This service handles data operations for authenticated users
 
@@ -6,11 +7,15 @@ import { Expense } from './fga';
 import { API_BASE_URL } from './config';
 
 class AuthDataService {
+  private profile: { userId: string; department: string; limit: number } | null = null;
   private baseUrl = `${API_BASE_URL}/api/auth`;
 
   async getExpenses(): Promise<Expense[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/expenses`);
+      const profileResponse = await apiFetch(`${this.baseUrl}/profile`);
+      if (!profileResponse.ok) throw new Error('User profile is unavailable');
+      this.profile = await profileResponse.json();
+      const response = await apiFetch(`${this.baseUrl}/expenses`);
       if (!response.ok) {
         throw new Error(`Failed to fetch expenses: ${response.statusText}`);
       }
@@ -24,7 +29,7 @@ class AuthDataService {
 
   async addExpense(expense: Expense): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/expenses`, {
+      const response = await apiFetch(`${this.baseUrl}/expenses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +50,7 @@ class AuthDataService {
 
   async updateExpense(expenseId: string, updates: Partial<Expense>): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/expenses/${expenseId}`, {
+      const response = await apiFetch(`${this.baseUrl}/expenses/${expenseId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -62,7 +67,7 @@ class AuthDataService {
 
   async deleteExpense(expenseId: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/expenses/${expenseId}`, {
+      const response = await apiFetch(`${this.baseUrl}/expenses/${expenseId}`, {
         method: 'DELETE',
       });
 
@@ -120,11 +125,7 @@ class AuthDataService {
       }
 
       // Update the expense status
-      const success = await this.updateExpense(expenseId, { 
-        status: 'Approved',
-        approvedBy: currentUser,
-        approvedAt: new Date().toISOString()
-      } as Partial<Expense>);
+      const success = await this.updateExpense(expenseId, { status: 'Approved' });
 
       return success;
     } catch (error) {
@@ -148,11 +149,7 @@ class AuthDataService {
       }
 
       // Update the expense status
-      const updates: Partial<Expense & { denialReason?: string; deniedBy?: string; deniedAt?: string }> = { 
-        status: 'Denied',
-        deniedBy: currentUser,
-        deniedAt: new Date().toISOString()
-      };
+      const updates: Partial<Expense> = { status: 'Denied' };
 
       if (reason) {
         updates.denialReason = reason;
@@ -181,14 +178,7 @@ class AuthDataService {
       }
 
       // Reset the expense status
-      const success = await this.updateExpense(expenseId, { 
-        status: 'Pending',
-        approvedBy: undefined,
-        approvedAt: undefined,
-        deniedBy: undefined,
-        deniedAt: undefined,
-        denialReason: undefined
-      } as Partial<Expense>);
+      const success = await this.updateExpense(expenseId, { status: 'Pending' });
 
       return success;
     } catch (error) {
@@ -337,7 +327,7 @@ class AuthDataService {
 
   async getAuthorizationStatus(): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/auth/status`);
+      const response = await apiFetch(`${this.baseUrl}/auth/status`);
       if (!response.ok) {
         return 'Not Available';
       }
@@ -360,7 +350,7 @@ class AuthDataService {
       const totalAmount = visibleExpenses.reduce((sum, e) => sum + e.amount, 0);
       const pendingAmount = pendingExpenses.reduce((sum, e) => sum + e.amount, 0);
       
-      // Get approval limit and department from hardcoded user data (same as demo mode)
+      // Display the policy profile returned by the authenticated API.
       const approvalLimit = this.getUserApprovalLimit(userId);
       const department = this.getUserDepartment(userId);
       
@@ -373,31 +363,13 @@ class AuthDataService {
 
   // Get user approval limit
   private getUserApprovalLimit(userId: string): number {
-    // Remove 'user:' prefix if present (for FGA format)
-    const normalizedUserId = userId.replace(/^user:/, '');
-    
-    const userLimits: Record<string, number> = {
-      'dina.dev@company.com': 0, // Cannot approve
-      'raj.manager@company.com': 500,
-      'chen.vp@company.com': 5000,
-      'frank.finance@company.com': 0 // Cannot approve
-    };
-    return userLimits[normalizedUserId] || 0;
+    return this.profile?.userId === userId.replace(/^user:/, '') ? Number(this.profile.limit) || 0 : 0;
   }
 
-  // Get user department
   private getUserDepartment(userId: string): string {
-    // Remove 'user:' prefix if present (for FGA format)
-    const normalizedUserId = userId.replace(/^user:/, '');
-    
-    const userDepartments: Record<string, string> = {
-      'dina.dev@company.com': 'Engineering',
-      'raj.manager@company.com': 'Engineering',
-      'chen.vp@company.com': 'Engineering',
-      'frank.finance@company.com': 'Finance'
-    };
-    return userDepartments[normalizedUserId] || 'Unknown';
+    return this.profile?.userId === userId.replace(/^user:/, '') ? this.profile.department : 'Unknown';
   }
+
 }
 
 export const authDataService = new AuthDataService();

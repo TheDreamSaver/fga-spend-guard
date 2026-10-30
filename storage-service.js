@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 class FileStorageService {
   constructor() {
-    this.storageFile = path.join(__dirname, 'storage.json');
+    this.storageFile = path.join(process.env.DATA_DIR || path.join(__dirname, '.data'), 'expenses.json');
   }
 
   // Read expenses from JSON file
@@ -20,7 +20,7 @@ class FileStorageService {
         const parsed = JSON.parse(data);
         return parsed.expenses || [];
       }
-      return [];
+      return JSON.parse(fs.readFileSync(path.join(__dirname, 'data/demo-expenses.json'), 'utf8')).expenses;
     } catch (error) {
       console.error('Error reading expenses:', error);
       return [];
@@ -31,6 +31,7 @@ class FileStorageService {
   writeExpenses(expenses) {
     try {
       const data = { expenses };
+      fs.mkdirSync(path.dirname(this.storageFile), { recursive: true });
       fs.writeFileSync(this.storageFile, JSON.stringify(data, null, 2));
       console.log(`✅ Expenses saved to ${this.storageFile}`);
       return true;

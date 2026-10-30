@@ -1,0 +1,6 @@
+services:
+  openfga:
+    image: openfga/openfga:v1.22.1
+    command: run --datastore-engine memory --playground-enabled=false
+    ports:
+      - "127.0.0.1:8081:8080"
