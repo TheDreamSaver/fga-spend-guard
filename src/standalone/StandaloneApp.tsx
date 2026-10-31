@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ArrowUpRight, Check, RotateCcw, Send, ShieldCheck, X } from 'lucide-react'
+import { ArrowUpRight, Bot, Check, Plus, RotateCcw, Send, ShieldCheck, Users, X } from 'lucide-react'
 import { PEOPLE, freshExpenses, money, visibleTo, manages, approvalReason, decide, addExpense, answer } from './model.mjs'
 
 const STORAGE_KEY = 'smartspend-sample-v1'
-const button = 'inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-40'
+const button = 'inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-40'
 const panel = 'rounded-2xl border border-slate-200 bg-white shadow-sm'
-const field = 'min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base focus:outline-2 focus:outline-emerald-700'
+const field = 'min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base focus:outline-2 focus:outline-blue-700'
+const avatars = { dina_dev: '👩‍💻', raj_manager: '👨‍💼', chen_vp: '👩‍💼', frank_finance: '📊' }
 
 function loadExpenses() {
   try {
@@ -76,37 +77,40 @@ export default function StandaloneApp() {
     setNotice('Sample data restored.')
   }
 
-  return <div className="min-h-screen bg-slate-50 text-slate-900">
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
-        <a href="/" className="flex items-center gap-3 text-xl font-bold tracking-tight"><span className="rounded-xl bg-emerald-700 p-2 text-white"><ShieldCheck aria-hidden="true" size={22} /></span>SmartSpend</a>
-        <a className="inline-flex min-h-10 items-center gap-1 text-sm text-slate-600 hover:text-emerald-800" href="https://ashishjha.ai/work">Built by Ashish Jha <ArrowUpRight aria-hidden="true" size={16} /></a>
+  return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-slate-900">
+    <header>
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+        <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-blue-800"><ShieldCheck aria-hidden="true" size={15} />Demo mode · sample data</span>
+        <a className="inline-flex min-h-10 items-center gap-1 text-sm text-slate-600 hover:text-blue-800" href="https://ashishjha.ai/work">Built by Ashish Jha <ArrowUpRight aria-hidden="true" size={16} /></a>
       </div>
     </header>
-    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
-      <div className="flex flex-wrap items-start justify-between gap-5">
-        <div className="max-w-2xl space-y-3"><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">Interactive sample-data demo</span>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Who can approve this expense?</h1>
-          <p className="text-base leading-relaxed text-slate-600">Switch roles to explore ownership, reporting chains and spending limits. This simulation runs entirely in your browser; changes stay in this tab.</p>
+    <main className="mx-auto max-w-7xl space-y-6 px-4 pb-8 pt-3 sm:px-6 sm:pb-10">
+      <div className="mx-auto max-w-3xl space-y-3 pb-2 text-center">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">SmartSpend</h1>
+          <p className="text-lg font-medium text-slate-700 sm:text-xl">Expense management with fine-grained authorization</p>
+          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">Switch roles, submit a request and see how the approval rules change.</p>
         </div>
-        <button type="button" className={button} onClick={reset}><RotateCcw aria-hidden="true" size={16} />Reset demo</button>
-      </div>
       {!storageAvailable && <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Browser storage is unavailable. You can still try the demo; refreshing will reset your changes.</p>}
-      <section aria-label="Choose a role" className={`${panel} grid gap-5 p-5 sm:grid-cols-[minmax(220px,1fr)_2fr] sm:p-6`}>
-        <div><label htmlFor="persona" className="mb-2 block text-sm font-semibold">Try a different role</label>
+      <section aria-label="Choose a role" className={`${panel} flex flex-wrap items-end justify-between gap-4 p-5 sm:p-6`}>
+        <div className="w-full max-w-md"><label htmlFor="persona" className="mb-2 flex items-center gap-2 font-semibold"><Users aria-hidden="true" size={19} />Persona selector</label>
           <select id="persona" value={actor} onChange={event => changeRole(event.target.value)} className={field}>
             {Object.entries(PEOPLE).map(([id, value]: [string, any]) => <option key={id} value={id}>{value.name} · {value.role}</option>)}
           </select>
         </div>
-        <div className="space-y-2"><p className="font-semibold">{person.role} · {person.department}</p><p className="text-sm leading-relaxed text-slate-600">{person.note}</p><p className="text-xs leading-relaxed text-slate-500">Reporting chain: Dina → Raj → Chen. Finance can view every request for auditing.</p></div>
+        <button type="button" className={button} onClick={reset}><RotateCcw aria-hidden="true" size={16} />Reset demo</button>
       </section>
-      <div className="grid grid-cols-3 gap-3 sm:gap-5">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
+      <div className="min-w-0 space-y-6">
+      <section aria-label="Current role" className={`${panel} space-y-4 p-5 sm:p-6`}>
+        <div className="flex items-start gap-3"><span className="rounded-xl bg-blue-50 p-3 text-2xl" aria-hidden="true">{avatars[actor]}</span><div><h2 className="text-xl font-semibold">{person.name}</h2><p className="text-sm font-medium text-blue-700">{person.role} · {person.department}</p><p className="mt-2 text-sm leading-relaxed text-slate-600">{person.note}</p></div></div>
+        <p className="rounded-lg bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-900">Reporting chain: Dina → Raj → Chen. Finance can view every request for auditing.</p>
+        <div className="grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
         {[[visible.length, 'Visible requests'], [approvable.length, 'Ready for your approval'], [person.limit ? money(person.limit) : 'View only', 'Approval limit']].map(([value, label]) => <div key={label} className={`${panel} p-3 sm:p-5`}><p className="text-lg font-semibold tabular-nums sm:text-2xl">{value}</p><p className="mt-1 text-xs leading-relaxed text-slate-500 sm:text-sm">{label}</p></div>)}
-      </div>
-      <p role="status" className="min-h-6 text-sm font-medium text-emerald-800">{notice}</p>
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        </div>
+      </section>
+      <p role="status" className={notice ? 'rounded-lg border border-blue-200 bg-white px-4 py-3 text-sm font-medium text-blue-900' : 'sr-only'}>{notice}</p>
         <section aria-labelledby="expenses-title" className={`${panel} min-w-0 overflow-hidden`}>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5"><div><h2 id="expenses-title" className="text-lg font-semibold">Expense requests</h2><p className="mt-1 text-sm text-slate-500">Showing what {person.name.split(' ')[0]} can see.</p><p className="mt-1 text-xs text-slate-500 sm:hidden">Swipe the table to see actions →</p></div><button type="button" aria-expanded={adding} className={button} onClick={() => setAdding(!adding)}>Add expense</button></div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5"><div><h2 id="expenses-title" className="text-lg font-semibold">Expense reports</h2><p className="mt-1 text-sm text-slate-500">Showing what {person.name.split(' ')[0]} can see.</p><p className="mt-1 text-xs text-slate-500 sm:hidden">Swipe the table to see actions →</p></div><button type="button" aria-expanded={adding} className={`${button} !border-blue-600 !bg-gradient-to-r from-blue-600 to-emerald-600 !text-white`} onClick={() => setAdding(!adding)}><Plus aria-hidden="true" size={16} />Add expense</button></div>
           {adding && <form onSubmit={submitExpense} className="space-y-3 border-b border-slate-200 bg-slate-50 p-5">
             <p className="text-sm font-medium">Submit as {person.name}</p>
             <div><label htmlFor="description" className="mb-1 block text-sm">Description</label><input id="description" required maxLength={120} value={description} onChange={event => setDescription(event.target.value)} className={field} placeholder="e.g. Train to a client meeting" /></div>
@@ -130,8 +134,9 @@ export default function StandaloneApp() {
             {!visible.length && <p className="p-6 text-sm text-slate-500">No requests for this role. Add one or reset the demo.</p>}
           </div>
         </section>
-        <aside className={`${panel} min-w-0 p-5`} aria-labelledby="assistant-title">
-          <div className="space-y-2"><h2 id="assistant-title" className="text-lg font-semibold">Demo assistant</h2><p className="text-sm leading-relaxed text-slate-500">Scripted responses using the selected role’s permissions. Try an approval command to see the same rules apply.</p></div>
+        </div>
+        <aside className={`${panel} min-w-0 p-5 lg:sticky lg:top-6`} aria-labelledby="assistant-title">
+          <div className="space-y-3"><div className="flex items-center gap-3"><span className="rounded-xl bg-blue-100 p-2.5 text-blue-700"><Bot aria-hidden="true" size={24} /></span><div><h2 id="assistant-title" className="text-lg font-semibold">Expense assistant</h2><p className="text-xs text-slate-500">Acting as {person.name}</p></div></div><p className="text-sm leading-relaxed text-slate-500">Explore what this role can see and approve. This demo uses scripted responses.</p></div>
           <div className="my-4 flex flex-wrap gap-2">{['What can I approve?', 'Show my expenses', 'Approve exp_101'].map(text => <button key={text} className={`${button} text-xs`} onClick={() => ask(text)}>{text}</button>)}</div>
           <div role="log" aria-label="Demo conversation" aria-live="polite" className="max-h-80 space-y-3 overflow-y-auto rounded-lg bg-slate-50 p-3">
             {!messages.length && <p className="text-sm leading-relaxed text-slate-500">You’re trying the demo as {person.name}. Ask about the visible requests, or enter an exact command such as “Approve exp_101”.</p>}
@@ -140,7 +145,7 @@ export default function StandaloneApp() {
           <form onSubmit={event => { event.preventDefault(); ask(query) }} className="mt-4 flex gap-2"><label className="sr-only" htmlFor="query">Message the demo assistant</label><input id="query" className={`${field} min-w-0`} value={query} onChange={event => setQuery(event.target.value)} maxLength={300} placeholder="Ask about an expense…" /><button className={button} disabled={!query.trim()} aria-label="Send message"><Send aria-hidden="true" size={17} /></button></form>
         </aside>
       </div>
-      <footer className="space-y-2 border-t border-slate-200 pt-6 text-sm leading-relaxed text-slate-500"><p>This browser simulation illustrates the SmartSpend permission model. The full implementation uses server-side OpenFGA checks and verified identity. No live OpenFGA service or language model is used here.</p><a className="inline-flex min-h-10 items-center gap-1 text-emerald-800 underline underline-offset-4" href="https://dev.to/thedreamsaver/smartspend-agentic-expense-management-with-auth0-fga-4ejf">Read the original project write-up <ArrowUpRight aria-hidden="true" size={14} /></a></footer>
+      <footer className="space-y-2 border-t border-blue-200 pt-6 text-sm leading-relaxed text-slate-600"><p>This browser simulation uses sample data; changes stay in this tab. The full implementation uses server-side OpenFGA checks and verified identity. No live OpenFGA service or language model is used here.</p><div className="flex flex-wrap gap-x-6"><a className="inline-flex min-h-10 items-center gap-1 text-blue-800 underline underline-offset-4" href="https://dev.to/thedreamsaver/smartspend-agentic-expense-management-with-auth0-fga-4ejf">Read the project write-up <ArrowUpRight aria-hidden="true" size={14} /></a><a className="inline-flex min-h-10 items-center gap-1 text-blue-800 underline underline-offset-4" href="https://github.com/TheDreamSaver/fga-spend-guard">View the source <ArrowUpRight aria-hidden="true" size={14} /></a></div></footer>
     </main>
   </div>
 }
