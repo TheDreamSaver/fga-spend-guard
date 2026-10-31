@@ -84,7 +84,7 @@ npm audit
 
 Tests cover record filtering, missing/invalid credentials, user impersonation, direct mutation attempts, approval limits, relationship administration, AI context filtering, service outages, JWT validation and scoped/paginated tuple cleanup. Live Auth0 login and hosted credentials require the operator’s own configuration.
 
-Only synthetic seeds are committed under `data/`. Runtime files live in ignored `.data/`. See [SECURITY.md](SECURITY.md) before publishing this repository’s existing history.
+Only synthetic seeds are committed under `data/`. Runtime files live in ignored `.data/`. See [SECURITY.md](SECURITY.md) for credential handling and the history-cleanup notice.
 
 ## License
 
