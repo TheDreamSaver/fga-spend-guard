@@ -4,6 +4,20 @@ A React/TypeScript demo of fine-grained access to expense records. Four syntheti
 
 The optional AI layer summarizes records selected by the server. It cannot write expenses. Without an OpenAI key, the UI uses its deterministic query responses.
 
+## Public standalone demo
+
+[Try SmartSpend](https://smartspend-thedreamsaver.vercel.app/) · hosted under `thealexadev`.
+
+The public demo is a browser-only simulation with synthetic data, a reporting-chain policy and scripted assistant commands. Each tab keeps its own changes in session storage. It has no login, backend, live OpenFGA connection, language-model calls or service credentials. It illustrates the full implementation's rules; its browser checks are not a security boundary for real records.
+
+```sh
+npm run dev:demo
+npm run build:demo
+node scripts/stage-demo.mjs
+```
+
+The staging script copies only the static demo build into a temporary folder and prints its path. Link that folder to `thealexadev/smartspend-thedreamsaver` and deploy it with the Vercel CLI. This avoids uploading the full app, API handlers, environment files or Git history. Git-triggered deployments are disabled in this branch's Vercel configuration; the old account's integration must not publish the server-backed app as a static site.
+
 ## Run locally
 
 Requires Node.js 22.12+ and Docker (or an existing local OpenFGA server).
